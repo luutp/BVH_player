@@ -219,7 +219,7 @@ setappdata(handles.figure,'handles',handles);
 
 function slider_frame_Callback(hObject,eventdata,handles)
 handles=getappdata(handles.figure,'handles');
-sl_val = get(hObject,'value');
+sl_val = round(get(hObject,'value'));
 set(handles.edit_frame,'string',num2str(sl_val));
 gcinfo = gclist2info(uigetjlistbox(handles.jlistbox_matdata,'select','all'));
 gcid = find(gcinfo.index(:,1) <= sl_val,1,'last');
