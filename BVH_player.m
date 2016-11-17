@@ -415,16 +415,17 @@ axes(handles.player);
 cla;hold on;
 skeleton = handles.skeleton;
 for nn = 1:length(skeleton)
-    plot3(skeleton(nn).Dxyz(1,ff),skeleton(nn).Dxyz(3,ff),skeleton(nn).Dxyz(2,ff),'.','markersize',20)
+    plot3(-skeleton(nn).Dxyz(1,ff),-skeleton(nn).Dxyz(3,ff),skeleton(nn).Dxyz(2,ff),'.','markersize',20)
     parent = skeleton(nn).parent;
     if parent > 0
-        plot3([skeleton(parent).Dxyz(1,ff) skeleton(nn).Dxyz(1,ff)],...
-            [skeleton(parent).Dxyz(3,ff) skeleton(nn).Dxyz(3,ff)],...
+        plot3([-skeleton(parent).Dxyz(1,ff) -skeleton(nn).Dxyz(1,ff)],...
+            [-skeleton(parent).Dxyz(3,ff) -skeleton(nn).Dxyz(3,ff)],...
             [skeleton(parent).Dxyz(2,ff) skeleton(nn).Dxyz(2,ff)])
     end    
 end
-view(-30,30)
-axis equal off
+view(-45, -30)
+axis equal
+% ylabel('y axis');
 drawnow
 
 function liststr = gcinfo2list(matdata,label)
@@ -583,7 +584,7 @@ else
     elseif strcmpi(key,'r') && hObject == handles.jlistbox_matdata
         set(handles.edit_gcevent5,'string',get(handles.edit_frame,'string'));   % Add current frame to gait event 5
     elseif strcmpi(key,'e') && hObject == handles.jlistbox_matdata
-        idx = get(handles.combobox_gclabel,'selectedindex')
+        idx = get(handles.combobox_gclabel,'selectedindex');
         if idx == get(handles.combobox_gclabel,'ItemCount')-1, idx = 0;
         else idx = idx + 1; end
         set(handles.combobox_gclabel,'SelectedIndex',idx);
