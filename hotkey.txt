@@ -21,6 +21,10 @@ Make sure the Gait Cycle listbox is selected ('g'+'l');
 'd':		Insert current frame to 3rd event;
 'f':		Insert current frame to 4th event;
 'r':		Insert current frame to 5th event;
+'e':		Scroll up the items in popupmenu for terrain label.
+'x':		Remove selected gait cycle
+'Del':		Remove selected gait cycle
+'Ctrl' + 's':	Save
 
 Help
 'F1'		: 	Open hotkey text file.
