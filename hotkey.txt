@@ -1,0 +1,26 @@
+Move between UIcomponents:
+'g' + 'f' : Go to listbox of filenames
+'g' + 'l' : Go to listbox of gait cycle;
+
+'Enter': 	If file listbox is active: Load selected filename
+			If gait cycle listbox is active: Insert new Gait Cycle.
+			
+'Shift' + 'Enter':	Update selected gait cycle			
+
+
+Player control.
+
+Make sure the Gait Cycle listbox is selected ('g'+'l');
+'Arrow Up':		Move up one gc.
+'Arrow Down':	Move down one gc
+'Arrow Left': 	Previous Frame;
+'Arrow Right': 	Next Frame;
+'Spacebar': 	Next 4 frames;
+'a':		Insert current frame to 1st event;
+'s':		Insert current frame to 2nd event;
+'d':		Insert current frame to 3rd event;
+'f':		Insert current frame to 4th event;
+'r':		Insert current frame to 5th event;
+
+Help
+'F1'		: 	Open hotkey text file.
