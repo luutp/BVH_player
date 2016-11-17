@@ -130,7 +130,7 @@ uialign(uipanel_radio,container_gcevent,'align','southwest','scale',[1 3],'gap',
 uisetjcombolist(handles.combobox_currdir,{cd});
 uijlist_setfiles(handles.jlistbox_filenameinput,cd);
 handles.currframe = 1 ; % to store current frame of timer object
-set(handles.combobox_gclabel,'SelectedIndex',0);
+set(handles.combobox_gclabel,'SelectedIndex',0,'MaximumRowCount',10);
 set(handles.slider_frame,'min',0,'max',10000);
 handles.keyholder = '';
 % Setappdata
@@ -172,8 +172,11 @@ end
 % Setappdata
 setappdata(handles.figure,'handles',handles);
 
-function handles = jlistbox_filenameinput_load(hObject,handles)
+function handles = jlistbox_filenameinput_load(hObject,handles);
 handles=getappdata(handles.figure,'handles');
+[stacktrace, ~]=dbstack;
+thisFuncName=stacktrace(1).name;
+%=====
 val=get(hObject,'SelectedValue');
 mark1=strfind(val,'>');mark1=mark1(end-1);
 mark2=strfind(val,'<');mark2=mark2(end);
@@ -196,14 +199,13 @@ elseif strcmpi(ext,'.mat')
     myfile = class_FileIO('filename',filename,'filedir',currdir);
     myfile.loadtows;
     handles.kinfile = myfile;
-    kin = evalin('base','kin');
-    handles.AccLeftFoot = kin.Data.sensorAcceleration.LeftFoot(:,3);
-    handles.AccRightFoot = kin.Data.sensorAcceleration.RightFoot(:,3);
-    handles.OriLeftFoot = kin.Data.sensorOrientationEuler.LeftFoot(:,2);
-    handles.OriRightFoot = kin.Data.sensorOrientationEuler.RightFoot(:,2);
-    
-    label = kin.gc.label;
-    uisetjlistbox(handles.jlistbox_matdata,gcinfo2list(kin.gc.event.index,label));
+    kin = evalin('base','kin');            
+    uisetjlistbox(handles.jlistbox_matdata,gcinfo2list(kin.gc.index,kin.gc.label));
+    for i = 1 : length(kin.gc.transleg)
+        if strcmpi(kin.gc.transleg(i),'l'), idx = 1;
+        else idx = 2; end
+        set(handles.radio_transleg(i).group,'selectedobject',handles.radio_transleg(i).items{idx});
+    end
     set(handles.jlistbox_matdata,'SelectedIndex',0);
     jlistbox_matdata_Callback(handles.jlistbox_matdata,[],handles);
 elseif strcmpi(ext,'.bvh')
@@ -214,6 +216,7 @@ elseif strcmpi(ext,'.bvh')
     fprintf('bvh file is loaded.\n');
 else
 end
+fprintf('DONE...%s.\n',thisFuncName);
 % Setappdata
 setappdata(handles.figure,'handles',handles);
 
@@ -384,10 +387,26 @@ setappdata(handles.figure,'handles',handles);
 
 function pushbutton_save_Callback(hObject,eventdata,handles)
 handles=getappdata(handles.figure,'handles');
+[stacktrace, ~]=dbstack;
+thisFuncName=stacktrace(1).name;
+for i = 1 : length(handles.radio_transleg)
+if get(handles.radio_transleg(i).group,'selectedobject')==handles.radio_transleg(i).items{1}
+    transleg(i)=cellstr('L'); else transleg(i)=cellstr('R'); end;
+end
 % Convert back to mat data from list data;
 kin = evalin('base','kin');
-kin.gc.event.index = handles.matdata;
-handles.kinfile.savevars('kin');
+kin.gc.transleg = transleg;
+gcinfo = gclist2info(uigetjlistbox(handles.jlistbox_matdata,'select','all'));
+kin.gc.index = gcinfo.index;
+kin.gc.label = gcinfo.label;
+kin.gc.time = (gcinfo.index-1)./30;
+% kin.gc.index = kin.gc.event.index; % To modify kin format.
+% kin.gc.time = kin.gc.event.time;
+% kin.gc = rmfield(kin.gc,'event');
+% kin.gc.transleg = transleg;
+fprintf('Saving...%s\n',handles.kinfile.filename);
+handles.kinfile.savevars(kin);
+fprintf('DONE...%s\n',thisFuncName);
 % Setappdata
 setappdata(handles.figure,'handles',handles);
 
@@ -513,7 +532,6 @@ if isprop(eventdata,'Key')
 else
     key = lower(char(eventdata.getKeyText(eventdata.getKeyCode)));    % Java component;
 end
-key
 if any([strcmpi(key,'g'),strcmpi(key,'ctrl'),strcmpi(key,'control'),...
         strcmpi(key,'shift'),strcmpi(key,'alt')])
     handles.keyholder = key;
@@ -536,6 +554,8 @@ elseif strcmpi(handles.keyholder,'shift')
     if strcmpi(key,'return') || strcmpi(key,'enter')
         pushbutton_update_Callback(handles.pushbutton_update,[],handles);        
     end
+elseif strcmpi(handles.keyholder,'ctrl') || strcmpi(handles.keyholder,'control') && strcmpi(key,'s')
+    pushbutton_save_Callback(handles.pushbutton_save,[],handles);
 else
     if strcmpi(key,'return') || strcmpi(key,'enter') && hObject == handles.jlistbox_matdata
         pushbutton_insert_Callback(handles.pushbutton_insert,[],handles);        
@@ -552,16 +572,23 @@ else
     elseif strcmpi(key,'space') && hObject == handles.jlistbox_matdata
         set(handles.slider_frame,'value',get(handles.slider_frame,'value')+4);
         slider_frame_Callback(handles.slider_frame,[],handles);
-    elseif strcmpi(key,'a') && hObject == handles.jlistbox_matdata
-        set(handles.edit_gcevent1,'string',get(handles.edit_frame,'string'));
+    elseif strcmpi(key,'a') && hObject == handles.jlistbox_matdata           
+        set(handles.edit_gcevent1,'string',get(handles.edit_frame,'string'));   % Add current frame to gait event 1
     elseif strcmpi(key,'s') && hObject == handles.jlistbox_matdata
-        set(handles.edit_gcevent2,'string',get(handles.edit_frame,'string'));
+        set(handles.edit_gcevent2,'string',get(handles.edit_frame,'string'));   % Add current frame to gait event 2
     elseif strcmpi(key,'d') && hObject == handles.jlistbox_matdata
-        set(handles.edit_gcevent3,'string',get(handles.edit_frame,'string'));
+        set(handles.edit_gcevent3,'string',get(handles.edit_frame,'string'));   % Add current frame to gait event 3
     elseif strcmpi(key,'f') && hObject == handles.jlistbox_matdata
-        set(handles.edit_gcevent4,'string',get(handles.edit_frame,'string'));
+        set(handles.edit_gcevent4,'string',get(handles.edit_frame,'string'));   % Add current frame to gait event 4
     elseif strcmpi(key,'r') && hObject == handles.jlistbox_matdata
-        set(handles.edit_gcevent5,'string',get(handles.edit_frame,'string'));
+        set(handles.edit_gcevent5,'string',get(handles.edit_frame,'string'));   % Add current frame to gait event 5
+    elseif strcmpi(key,'e') && hObject == handles.jlistbox_matdata
+        idx = get(handles.combobox_gclabel,'selectedindex')
+        if idx == get(handles.combobox_gclabel,'ItemCount')-1, idx = 0;
+        else idx = idx + 1; end
+        set(handles.combobox_gclabel,'SelectedIndex',idx);
+    elseif strcmpi(key,'x') || strcmpi(key,'delete') && hObject == handles.jlistbox_matdata
+        pushbutton_del_Callback(handles.pushbutton_del,[],handles);
     elseif strcmpi(key,'f1')
         winopen('.\hotkey.txt');
     end
