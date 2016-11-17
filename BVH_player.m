@@ -424,7 +424,7 @@ for nn = 1:length(skeleton)
     end    
 end
 view(-45, -30)
-axis equal
+axis equal off
 % ylabel('y axis');
 drawnow
 
