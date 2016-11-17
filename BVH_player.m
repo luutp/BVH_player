@@ -208,8 +208,8 @@ elseif strcmpi(ext,'.mat')
     jlistbox_matdata_Callback(handles.jlistbox_matdata,[],handles);
 elseif strcmpi(ext,'.bvh')
     [handles.skeleton,handles.time] = loadbvh(fullfile(currdir,filename));
-    set(handles.slider_frame,'min',1,'max',length(handles.time),...
-        'sliderstep',[1 100]./length(handles.time));
+    set(handles.slider_frame,'min',0,'max',length(handles.time),...
+        'sliderstep',[1 10]./length(handles.time));
     showframe(1,handles);
     fprintf('bvh file is loaded.\n');
 else
@@ -228,7 +228,6 @@ elseif gcid >= size(gcinfo.index,1), setval = size(gcinfo.index,1)-1;
 else, setval = gcid-1; 
 end
 set(handles.jlistbox_matdata,'SelectedIndex',setval);
-
 isfield(handles,'skeleton')
 if isfield(handles,'skeleton')    
     showframe(sl_val,handles);
@@ -287,7 +286,7 @@ function jlistbox_matdata_Callback(hObject,eventdata,handles)
 handles=getappdata(handles.figure,'handles');
 thisstr = uigetjlistbox(hObject);
 gcinfo = gclist2info(thisstr);
-% updateuigcevent(gcinfo,handles);
+updateuigcevent(gcinfo,handles);
 set(handles.edit_frame,'string',num2str(gcinfo.index(1)));
 set(handles.slider_frame,'value',gcinfo.index(1));
 slider_frame_Callback(handles.slider_frame,[],handles);
