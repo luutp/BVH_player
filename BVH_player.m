@@ -415,16 +415,20 @@ setappdata(handles.figure,'handles',handles);
 
 function updateuigcevent(gcinfo,handles)
 handles=getappdata(handles.figure,'handles');
-if strcmpi(gcinfo.label,'LW1'), idx = 0;
-elseif strcmpi(gcinfo.label,'LW2'), idx = 1;
-elseif strcmpi(gcinfo.label,'LW3'), idx = 2;
-elseif strcmpi(gcinfo.label,'LW4'), idx = 3;
-elseif strcmpi(gcinfo.label,'LW5'), idx = 4;
-elseif strcmpi(gcinfo.label,'LW6'), idx = 5;
-elseif strcmpi(gcinfo.label,'RD'), idx = 6;
-elseif strcmpi(gcinfo.label,'RA'), idx = 7;
-elseif strcmpi(gcinfo.label,'SA'), idx = 8;
-elseif strcmpi(gcinfo.label,'SD'), idx = 9;
+if strcmpi(gcinfo.label,'LW0F'), idx = 0;
+elseif strcmpi(gcinfo.label,'RD'), idx = 1;
+elseif strcmpi(gcinfo.label,'LW1F'), idx = 2;
+elseif strcmpi(gcinfo.label,'LW2F'), idx = 3;
+elseif strcmpi(gcinfo.label,'LW3F'), idx = 4;
+elseif strcmpi(gcinfo.label,'SA'), idx = 5;
+elseif strcmpi(gcinfo.label,'LW4F'), idx = 6;
+elseif strcmpi(gcinfo.label,'LW4B'), idx = 7;
+elseif strcmpi(gcinfo.label,'SD'), idx = 8;
+elseif strcmpi(gcinfo.label,'LW3B'), idx = 9;
+elseif strcmpi(gcinfo.label,'LW2B'), idx = 10;
+elseif strcmpi(gcinfo.label,'LW1B'), idx = 11;
+elseif strcmpi(gcinfo.label,'RA'), idx = 12;
+elseif strcmpi(gcinfo.label,'LW0B'), idx = 13;
 else idx = 0;
 end
 set(handles.edit_gcevent1,'string',num2str(gcinfo.index(1)));
