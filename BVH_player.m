@@ -252,12 +252,13 @@ set(handles.edit_frame,'string',num2str(sl_val));
 % UPdate jlistbox_matdata
 gcinfo = gclist2info(uigetjlistbox(handles.jlistbox_matdata,'select','all'));
 gcid = find(gcinfo.index(:,1) <= sl_val,1,'last');
-if isempty(gcid) setval = 0;
+if isempty(gcid) 
+    setval = 0;
 elseif gcid >= size(gcinfo.index,1), setval = size(gcinfo.index,1)-1;
-else, setval = gcid-1; 
+else
+    setval = gcid-1;
 end
 set(handles.jlistbox_matdata,'SelectedIndex',setval);
-isfield(handles,'skeleton')
 if isfield(handles,'skeleton')    
     showframe(sl_val,handles);
 end
@@ -604,7 +605,7 @@ handles=getappdata(handles.figure,'handles');
 ff = str2num(get(handles.edit_frame,'string'));
 set(handles.slider_frame,'value',ff);
 set(handles.edit_frame,'string',num2str(ff));
-showframe(ff,handles);
+% showframe(ff,handles);
 slider_frame_Callback(handles.slider_frame,[],handles);
 set(handles.edit_frame,'string',num2str(ff+1));
 % Setappdata
