@@ -120,18 +120,18 @@ uipanel_radio = uipanellist('title','Transition Foot',...
                 'gap',[gvar.margin.gap*2 0]); 
 % TIMER OBJECT
 handles.mytimer = timer('ExecutionMode','fixedSpacing',...
-    'Period',0.001,...
-    'BusyMode','queue',...
+    'Period',0.01,...
+    'BusyMode','drop',...
     'TimerFcn',{@timerFcn_Callback,handles},...
     'StopFcn',{@timerStopFcn_Callback,handles});
 % Alignment
-uialign(handles.player,container_filelist,'align','east','scale',[1.3 1.25],'gap',[0.06 -0.17]);
-uialign(handles.signalax,container_filelist,'align','east','scale',[1.3 0.4],'gap',[0.06 0.0]);
+uialign(handles.player,container_filelist,'align','east','scale',[1.3 1.25],'gap',[0.06 -0.23]);
+uialign(handles.signalax,container_filelist,'align','east','scale',[1.3 0.6],'gap',[0.06 0.0]);
 uialign(container_controller,handles.player,'align','southwest','scale',[1 0.12],'gap',[0 -0.01]);
 uialign(container_gcevent,container_controller,'align','southwest','scale',[1 1],'gap',[0 -0.01]);
 uialign(container_matdata,container_filelist,'align','southwest','scale',[0.85 1.4],'gap',[0 -0.01]);
 uialign(container_save,container_matdata,'align','southwest','scale',[1 0.1],'gap',[0 -0.01]);
-uialign(uipanel_radio,container_gcevent,'align','southwest','scale',[1 3],'gap',[0 -0.01]);
+uialign(uipanel_radio,container_gcevent,'align','southwest','scale',[1 2.5],'gap',[0 -0.01]);
 set(handles.signalannoax,'position',get(handles.signalax,'position'));
 % Initialize
 uisetjcombolist(handles.combobox_currdir,{cd});
@@ -284,10 +284,19 @@ AccLeftFoot = kin.Data.sensorAcceleration.LeftFoot(:,3);
 AccRightFoot = kin.Data.sensorAcceleration.RightFoot(:,3);
 OriLeftFoot = kin.Data.sensorOrientationEuler.LeftFoot(:,2);
 OriRightFoot = kin.Data.sensorOrientationEuler.RightFoot(:,2);
-plot(3*AccRightFoot,'r');
-plot(3*AccLeftFoot,'k');
-plot(OriLeftFoot,'r.');
-plot(OriRightFoot,'k.');
+PosLeftFoot = kin.Data.position.LeftFoot(:,3);
+PosRightFoot = kin.Data.position.RightFoot(:,3);
+
+plot(2*(AccRightFoot-mean(AccRightFoot))+35,'r');
+plot(0.5*(OriRightFoot-mean(OriRightFoot))+35,'r.');
+plot(2*(AccLeftFoot-mean(AccLeftFoot))+30,'k');
+plot(0.5*(OriLeftFoot-mean(OriLeftFoot))+30,'k.');
+
+plot(150*(PosRightFoot-mean(PosRightFoot))-50,'r-.');
+plot(0.5*(OriRightFoot-mean(OriRightFoot))-50,'r.');
+plot(150*(PosLeftFoot-mean(PosLeftFoot))-60,'k-.');
+plot(0.5*(OriLeftFoot-mean(OriLeftFoot))-60,'k.');
+
 selcolor = [255 0 0; 154 154 154; 0 0 0; 255 109 182]./256;
 set(gca,'xlim',[tsignal(1) tsignal(end)],'ylim',[-100 50]);
 for i = 1 : size(gcinfo.index,1)
@@ -316,6 +325,7 @@ hdl.drawshape;
 % class_text('location','north','string','Current Frame','textgap',[0 5],'show',1);
 % class_line('xdata',50,'ydata',52,'marker','v','markersize',15,'markerfacecolor','r','show',1);
 
+% ====Anno for signals
 limx = get(gca,'xlim');limy = get(gca,'ylim');
 hdl = class_line('xdata',[limx(1) limx(1)+3],'ydata',(limy(1)-40).*[1 1],'linecolor','r');
 set(hdl.textobj,'position',hdl.endpoint.position,'string','Acc-RightFoot',...
@@ -325,31 +335,45 @@ hdl = class_line('xdata',[limx(1) limx(1)+3],'ydata',(limy(1)-70).*[1 1],'lineco
 set(hdl.textobj,'position',hdl.endpoint.position,'string','Acc-LeftFoot',...
     'verticalalignment','middle','horizontalalignment','left','fontsize',8);
 hdl.drawshape;
-hdl = class_line('xdata',[limx(1)+20 limx(1)+23],'ydata',(limy(1)-40).*[1 1],'linecolor','r','linestyle',':');
+%--
+hdl = class_line('xdata',[limx(1)+12 limx(1)+15],'ydata',(limy(1)-40).*[1 1],'linecolor','r','linestyle',':');
 set(hdl.textobj,'position',hdl.endpoint.position,'string','Orient-RightFoot',...
     'verticalalignment','middle','horizontalalignment','left','fontsize',8);
 hdl.drawshape;
-hdl = class_line('xdata',[limx(1)+20 limx(1)+23],'ydata',(limy(1)-70).*[1 1],'linecolor','k','linestyle',':');
+hdl = class_line('xdata',[limx(1)+12 limx(1)+15],'ydata',(limy(1)-70).*[1 1],'linecolor','k','linestyle',':');
 set(hdl.textobj,'position',hdl.endpoint.position,'string','Orient-LeftFoot',...
     'verticalalignment','middle','horizontalalignment','left','fontsize',8);
 hdl.drawshape;
+%--
+hdl = class_line('xdata',[limx(1)+27 limx(1)+30],'ydata',(limy(1)-40).*[1 1],'linecolor','r','linestyle','-.');
+set(hdl.textobj,'position',hdl.endpoint.position,'string','Pos-RightFoot',...
+    'verticalalignment','middle','horizontalalignment','left','fontsize',8);
+hdl.drawshape;
+hdl = class_line('xdata',[limx(1)+27 limx(1)+30],'ydata',(limy(1)-70).*[1 1],'linecolor','k','linestyle','-.');
+set(hdl.textobj,'position',hdl.endpoint.position,'string','Pos-LeftFoot',...
+    'verticalalignment','middle','horizontalalignment','left','fontsize',8);
+hdl.drawshape;
+
+% Anno for Features;
+class_text('position',[limx(1)-7,40],'string',sprintf('Features\nLW'),'fontweight','bold','horizontalalignment','center','show',1);
+class_text('position',[limx(1)-7,-50],'string',sprintf('Features\nSTAIR'),'fontweight','bold','horizontalalignment','center','show',1);
 % Annotation for Gait Event;
-hdl = class_line('xdata',(limx(2)-40).*[1 1],'ydata',[limy(1)-70, limy(1)-40],...
+hdl = class_line('xdata',(limx(2)-30).*[1 1],'ydata',[limy(1)-70, limy(1)-40],...
     'linecolor',selcolor(1,:),'linestyle','-.','linewidth',1);
 set(hdl.textobj,'position',hdl.center.position,'string','RHC',...
     'verticalalignment','middle','horizontalalignment','left','fontsize',8,'textgap',[1 0]);
 hdl.drawshape;
-hdl = class_line('xdata',(limx(2)-32).*[1 1],'ydata',[limy(1)-70, limy(1)-40],...
+hdl = class_line('xdata',(limx(2)-22).*[1 1],'ydata',[limy(1)-70, limy(1)-40],...
     'linecolor',selcolor(2,:),'linestyle','-.');
 set(hdl.textobj,'position',hdl.center.position,'string','LTO',...
     'verticalalignment','middle','horizontalalignment','left','fontsize',8,'textgap',[1 0]);
 hdl.drawshape;
-hdl = class_line('xdata',(limx(2)-24).*[1 1],'ydata',[limy(1)-70, limy(1)-40],...
+hdl = class_line('xdata',(limx(2)-14).*[1 1],'ydata',[limy(1)-70, limy(1)-40],...
     'linecolor',selcolor(3,:),'linestyle','-.','linewidth',1);
 set(hdl.textobj,'position',hdl.center.position,'string','LHC',...
     'verticalalignment','middle','horizontalalignment','left','fontsize',8,'textgap',[1 0]);
 hdl.drawshape;
-hdl = class_line('xdata',(limx(2)-16).*[1 1],'ydata',[limy(1)-70, limy(1)-40],...
+hdl = class_line('xdata',(limx(2)-6).*[1 1],'ydata',[limy(1)-70, limy(1)-40],...
     'linecolor',selcolor(4,:),'linestyle','-.');
 set(hdl.textobj,'position',hdl.center.position,'string','RTO',...
     'verticalalignment','middle','horizontalalignment','left','fontsize',8,'textgap',[1 0]);
@@ -525,8 +549,11 @@ for i = 1:length(body)
             [-skeleton(parent).Dxyz(3,ff) -skeleton(nn).Dxyz(3,ff)],...
             [skeleton(parent).Dxyz(2,ff) skeleton(nn).Dxyz(2,ff)],...
             'color',selcolor);
-    end    
+    end        
 end
+rectcenter = [-skeleton(21).Dxyz(1,ff),-skeleton(21).Dxyz(3,ff)];
+class_rectangle('center',class_point('xdata',rectcenter(1),'ydata',rectcenter(2)),...
+    'width',100,'height',100,'facealpha',0.1,'facecolor',[154 154 154]./256,'draw',1);
 if get(handles.checkbox_defaultview,'value')==1
     view(-45, -30)
 else
