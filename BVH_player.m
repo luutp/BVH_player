@@ -287,7 +287,7 @@ set(gca,'xlim', limx,'ylim',limy);
 
 selcolor = [255 0 0; 154 154 154; 0 0 0; 255 109 182]./256;
 hdl = class_line('xdata',mean(limx).*[1 1],'ydata',[1.2*limy(2), mean(limy)],...
-    'linestyle','none','marker','v','markersize',10);
+    'linecolor','r');
 set(hdl.textobj,'position',hdl.startpoint.position,'string','Current Frame',...
     'verticalalignment','bottom','horizontalalignment','center','fontsize',8,...
     'fontweight','bold','textgap',[0 0]);
@@ -475,19 +475,29 @@ function showframe(ff,handles)
 axes(handles.player); 
 cla;hold on;
 skeleton = handles.skeleton;
-for nn = 1:length(skeleton)
-    plot3(-skeleton(nn).Dxyz(1,ff),-skeleton(nn).Dxyz(3,ff),skeleton(nn).Dxyz(2,ff),'.','markersize',20)
+body = 1 : length(skeleton);
+body([8,13,18,23,28]) = []; % Remove unneccessary parts.
+for i = 1:length(body)
+    nn = body(i);
+    if any(nn==[19 20 21 22]), selcolor = 'r'; 
+    elseif any(nn==[24 25 26 27]), selcolor = 'k'; 
+    else selcolor = [154 154 154]./256;
+    end
+    plot3(-skeleton(nn).Dxyz(1,ff),-skeleton(nn).Dxyz(3,ff),skeleton(nn).Dxyz(2,ff),'.','markersize',20,...
+        'color',selcolor)
+%     text(-skeleton(nn).Dxyz(1,ff),-skeleton(nn).Dxyz(3,ff),skeleton(nn).Dxyz(2,ff),sprintf('%d',nn));
     parent = skeleton(nn).parent;
     if parent > 0
         plot3([-skeleton(parent).Dxyz(1,ff) -skeleton(nn).Dxyz(1,ff)],...
             [-skeleton(parent).Dxyz(3,ff) -skeleton(nn).Dxyz(3,ff)],...
-            [skeleton(parent).Dxyz(2,ff) skeleton(nn).Dxyz(2,ff)])
+            [skeleton(parent).Dxyz(2,ff) skeleton(nn).Dxyz(2,ff)],...
+            'color',selcolor);
     end    
 end
 view(-45, -30)
 axis equal off
 % ylabel('y axis');
-drawnow
+% drawnow
 
 function liststr = gcinfo2list(matdata,label)
 for i = 1 : size(matdata,1)
@@ -560,10 +570,6 @@ ff = str2num(get(handles.edit_frame,'string'));
 set(handles.slider_frame,'value',ff);
 set(handles.edit_frame,'string',num2str(ff));
 showframe(ff,handles);
-handles.currframe = handles.currframe + 2;
-if handles.currframe > length(handles.time)
-    handles.currframe = length(handles.time);
-end
 slider_frame_Callback(handles.slider_frame,[],handles);
 set(handles.edit_frame,'string',num2str(ff+1));
 % Setappdata
