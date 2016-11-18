@@ -54,6 +54,7 @@ w=0.4; h=0.35;
 % Player
 handles.player = axes;
 handles.signalax = axes;
+handles.signalannoax = axes;
 % Player control button
 uistring={icontext(handles.iconlist.action.play,'Start'),...
     '',...
@@ -126,6 +127,7 @@ uialign(container_gcevent,container_controller,'align','southwest','scale',[1 1]
 uialign(container_matdata,container_filelist,'align','southwest','scale',[0.85 1.4],'gap',[0 -0.01]);
 uialign(container_save,container_matdata,'align','southwest','scale',[1 0.1],'gap',[0 -0.01]);
 uialign(uipanel_radio,container_gcevent,'align','southwest','scale',[1 3],'gap',[0 -0.01]);
+set(handles.signalannoax,'position',get(handles.signalax,'position'));
 % Initialize
 uisetjcombolist(handles.combobox_currdir,{cd});
 uijlist_setfiles(handles.jlistbox_filenameinput,cd);
@@ -207,6 +209,8 @@ elseif strcmpi(ext,'.mat')
         set(handles.radio_transleg(i).group,'selectedobject',handles.radio_transleg(i).items{idx});
     end
     set(handles.jlistbox_matdata,'SelectedIndex',0);
+    updateSignalplot(handles);
+    anno_signalax(handles);
     jlistbox_matdata_Callback(handles.jlistbox_matdata,[],handles);
 elseif strcmpi(ext,'.bvh')
     [handles.skeleton,handles.time] = loadbvh(fullfile(currdir,filename));
@@ -223,7 +227,9 @@ setappdata(handles.figure,'handles',handles);
 function slider_frame_Callback(hObject,eventdata,handles)
 handles=getappdata(handles.figure,'handles');
 sl_val = round(get(hObject,'value'));
+if sl_val ==0, sl_val = 1; end;
 set(handles.edit_frame,'string',num2str(sl_val));
+% UPdate jlistbox_matdata
 gcinfo = gclist2info(uigetjlistbox(handles.jlistbox_matdata,'select','all'));
 gcid = find(gcinfo.index(:,1) <= sl_val,1,'last');
 if isempty(gcid) setval = 0;
@@ -235,47 +241,100 @@ isfield(handles,'skeleton')
 if isfield(handles,'skeleton')    
     showframe(sl_val,handles);
 end
-if uh_isvarexist('kin')
-    axes(handles.signalax);
-    cla; hold on;
-    if sl_val < 50,  tsignal = 1 : 50;    
-    else tsignal = sl_val-50 : sl_val+50; % Get 100 frames around current frame
-    end    
-    kin = evalin('base','kin');
-    AccLeftFoot = kin.Data.sensorAcceleration.LeftFoot(:,3);
-    AccRightFoot = kin.Data.sensorAcceleration.RightFoot(:,3);
-    OriLeftFoot = kin.Data.sensorOrientationEuler.LeftFoot(:,2);
-    OriRightFoot = kin.Data.sensorOrientationEuler.RightFoot(:,2);
-    tsignal(find(tsignal >= length(AccLeftFoot))) = [];
-            
-    plot(tsignal,3*AccRightFoot(tsignal),'r');
-    plot(tsignal,3*AccLeftFoot(tsignal),'k');
-    plot(tsignal,OriLeftFoot(tsignal),'r.');
-    plot(tsignal,OriRightFoot(tsignal),'k.');
-    line('xdata',sl_val.*[1 1],'ydata',get(gca,'ylim'),'color','r');
-    set(gca,'xlim',[tsignal(1) tsignal(end)],'ylim',[-100 50]);    
-    % Anno
-    class_text('location','north','string','Current Frame','show',1);
-    limx = get(gca,'xlim');limy = get(gca,'ylim');
-    hdl = class_line('xdata',[limx(1) limx(1)+3],'ydata',(limy(1)-40).*[1 1],'linecolor','r');
-    set(hdl.textobj,'position',hdl.endpoint.position,'string','Acc-RightFoot',...
-        'verticalalignment','middle','horizontalalignment','left','fontsize',8);
-    hdl.drawshape;
-    hdl = class_line('xdata',[limx(1) limx(1)+3],'ydata',(limy(1)-70).*[1 1],'linecolor','k');
-    set(hdl.textobj,'position',hdl.endpoint.position,'string','Acc-LeftFoot',...
-        'verticalalignment','middle','horizontalalignment','left','fontsize',8);
-    hdl.drawshape;
-    hdl = class_line('xdata',[limx(1)+20 limx(1)+23],'ydata',(limy(1)-40).*[1 1],'linecolor','r','linestyle',':');
-    set(hdl.textobj,'position',hdl.endpoint.position,'string','Orient-RightFoot',...
-        'verticalalignment','middle','horizontalalignment','left','fontsize',8);
-    hdl.drawshape;
-    hdl = class_line('xdata',[limx(1)+20 limx(1)+23],'ydata',(limy(1)-70).*[1 1],'linecolor','k','linestyle',':');
-    set(hdl.textobj,'position',hdl.endpoint.position,'string','Orient-LeftFoot',...
-        'verticalalignment','middle','horizontalalignment','left','fontsize',8);
-    hdl.drawshape;
+% Scroll signal plot axis
+axes(handles.signalax);
+if sl_val < 50,  tsignal = 1 : 50;
+else tsignal = sl_val-50 : sl_val+50; % Get 100 frames around current frame
 end
-% Setappdata
+set(gca,'xlim',[tsignal(1) tsignal(end)],'ylim',[-100 50]);
 setappdata(handles.figure,'handles',handles);
+
+function updateSignalplot(handles)
+sl_val = round(get(handles.slider_frame,'value'));
+gcinfo = gclist2info(uigetjlistbox(handles.jlistbox_matdata,'select','all'));
+
+axes(handles.signalax);
+cla; hold on;
+if sl_val < 50,  tsignal = 1 : 50;
+else tsignal = sl_val-50 : sl_val+50; % Get 100 frames around current frame
+end
+kin = evalin('base','kin');
+AccLeftFoot = kin.Data.sensorAcceleration.LeftFoot(:,3);
+AccRightFoot = kin.Data.sensorAcceleration.RightFoot(:,3);
+OriLeftFoot = kin.Data.sensorOrientationEuler.LeftFoot(:,2);
+OriRightFoot = kin.Data.sensorOrientationEuler.RightFoot(:,2);
+plot(3*AccRightFoot,'r');
+plot(3*AccLeftFoot,'k');
+plot(OriLeftFoot,'r.');
+plot(OriRightFoot,'k.');
+selcolor = [255 0 0; 154 154 154; 0 0 0; 255 109 182]./256;
+set(gca,'xlim',[tsignal(1) tsignal(end)],'ylim',[-100 50]);
+for i = 1 : size(gcinfo.index,1)
+    for j = 1 : size(gcinfo.index,2)-1
+        if any(j == [1,3]), lwidth = 1;
+        else lwidth = 0.5; end
+        line('xdata',gcinfo.index(i,j).*[1 1],'ydata',get(gca,'ylim'),'color',selcolor(j,:),...
+            'linewidth',lwidth,'linestyle','-.');
+    end
+end
+
+function anno_signalax(handles)
+axes(handles.signalannoax);
+% Anno
+axis off; hold on;
+limx = [0 100]; limy = [-100 50];
+set(gca,'xlim', limx,'ylim',limy);
+
+selcolor = [255 0 0; 154 154 154; 0 0 0; 255 109 182]./256;
+hdl = class_line('xdata',mean(limx).*[1 1],'ydata',[1.2*limy(2), mean(limy)],...
+    'linestyle','none','marker','v','markersize',10);
+set(hdl.textobj,'position',hdl.startpoint.position,'string','Current Frame',...
+    'verticalalignment','bottom','horizontalalignment','center','fontsize',8,...
+    'fontweight','bold','textgap',[0 0]);
+hdl.drawshape;
+% class_text('location','north','string','Current Frame','textgap',[0 5],'show',1);
+% class_line('xdata',50,'ydata',52,'marker','v','markersize',15,'markerfacecolor','r','show',1);
+
+limx = get(gca,'xlim');limy = get(gca,'ylim');
+hdl = class_line('xdata',[limx(1) limx(1)+3],'ydata',(limy(1)-40).*[1 1],'linecolor','r');
+set(hdl.textobj,'position',hdl.endpoint.position,'string','Acc-RightFoot',...
+    'verticalalignment','middle','horizontalalignment','left','fontsize',8);
+hdl.drawshape;
+hdl = class_line('xdata',[limx(1) limx(1)+3],'ydata',(limy(1)-70).*[1 1],'linecolor','k');
+set(hdl.textobj,'position',hdl.endpoint.position,'string','Acc-LeftFoot',...
+    'verticalalignment','middle','horizontalalignment','left','fontsize',8);
+hdl.drawshape;
+hdl = class_line('xdata',[limx(1)+20 limx(1)+23],'ydata',(limy(1)-40).*[1 1],'linecolor','r','linestyle',':');
+set(hdl.textobj,'position',hdl.endpoint.position,'string','Orient-RightFoot',...
+    'verticalalignment','middle','horizontalalignment','left','fontsize',8);
+hdl.drawshape;
+hdl = class_line('xdata',[limx(1)+20 limx(1)+23],'ydata',(limy(1)-70).*[1 1],'linecolor','k','linestyle',':');
+set(hdl.textobj,'position',hdl.endpoint.position,'string','Orient-LeftFoot',...
+    'verticalalignment','middle','horizontalalignment','left','fontsize',8);
+hdl.drawshape;
+% Annotation for Gait Event;
+hdl = class_line('xdata',(limx(2)-40).*[1 1],'ydata',[limy(1)-70, limy(1)-40],...
+    'linecolor',selcolor(1,:),'linestyle','-.','linewidth',1);
+set(hdl.textobj,'position',hdl.center.position,'string','RHC',...
+    'verticalalignment','middle','horizontalalignment','left','fontsize',8,'textgap',[1 0]);
+hdl.drawshape;
+hdl = class_line('xdata',(limx(2)-32).*[1 1],'ydata',[limy(1)-70, limy(1)-40],...
+    'linecolor',selcolor(2,:),'linestyle','-.');
+set(hdl.textobj,'position',hdl.center.position,'string','LTO',...
+    'verticalalignment','middle','horizontalalignment','left','fontsize',8,'textgap',[1 0]);
+hdl.drawshape;
+hdl = class_line('xdata',(limx(2)-24).*[1 1],'ydata',[limy(1)-70, limy(1)-40],...
+    'linecolor',selcolor(3,:),'linestyle','-.','linewidth',1);
+set(hdl.textobj,'position',hdl.center.position,'string','LHC',...
+    'verticalalignment','middle','horizontalalignment','left','fontsize',8,'textgap',[1 0]);
+hdl.drawshape;
+hdl = class_line('xdata',(limx(2)-16).*[1 1],'ydata',[limy(1)-70, limy(1)-40],...
+    'linecolor',selcolor(4,:),'linestyle','-.');
+set(hdl.textobj,'position',hdl.center.position,'string','RTO',...
+    'verticalalignment','middle','horizontalalignment','left','fontsize',8,'textgap',[1 0]);
+hdl.drawshape;
+set(gca,'xlim', limx,'ylim',limy);
+
 
 function edit_frame_Callback(hObject,eventdata,handles)
 handles=getappdata(handles.figure,'handles');
@@ -323,7 +382,6 @@ handles=getappdata(handles.figure,'handles');
 thisstr = get(hObject,'string');
 if strcmpi(thisstr,icontext(handles.iconlist.action.play,'start'))
     set(hObject,'string',icontext(handles.iconlist.status.stop,'stop'));
-    handles.currframe = get(handles.slider_frame,'value');
     start(handles.mytimer);
 else    
     stop(handles.mytimer); % Perform a list of task to quit the program
@@ -336,7 +394,6 @@ function pushbutton_insert_Callback(hObject,eventdata,handles)
 handles=getappdata(handles.figure,'handles');
 gclabel = get(handles.combobox_gclabel,'selecteditem');
 gcindex = get(handles.jlistbox_matdata,'SelectedIndex') + 1;
-
 currlist = uigetjlistbox(handles.jlistbox_matdata,'select','all');
 gcinfo = gclist2info(currlist);
 currgcdata = gcinfo.index;
@@ -351,6 +408,7 @@ newgclabel = transpose({currgclabel{1:gcindex}, gclabel, currgclabel{gcindex+1:e
 % Update GUI;
 uisetjlistbox(handles.jlistbox_matdata,gcinfo2list(newgcdata,newgclabel));
 set(handles.jlistbox_matdata,'selectedIndex',gcindex);
+updateSignalplot(handles)
 % Setappdata
 setappdata(handles.figure,'handles',handles);
 
@@ -370,6 +428,7 @@ newgclabel = gcinfo.label; newgclabel{gcindex} = gclabel;
 % Update GUI;
 uisetjlistbox(handles.jlistbox_matdata,gcinfo2list(newgcdata,newgclabel));
 set(handles.jlistbox_matdata,'selectedIndex',gcindex-1);
+updateSignalplot(handles)
 % Setappdata
 setappdata(handles.figure,'handles',handles);
 
@@ -382,6 +441,8 @@ gcinfo.index(gcindex,:) = [];
 gcinfo.label(gcindex) = [];
 uisetjlistbox(handles.jlistbox_matdata,gcinfo2list(gcinfo.index,gcinfo.label));
 set(handles.jlistbox_matdata,'selectedIndex',gcindex-1);
+updateSignalplot(handles)
+
 % Setappdata
 setappdata(handles.figure,'handles',handles);
 
@@ -495,7 +556,7 @@ setappdata(handles.figure,'handles',handles);
 
 function timerFcn_Callback(hObject,event,handles)
 handles=getappdata(handles.figure,'handles');
-ff = handles.currframe;
+ff = str2num(get(handles.edit_frame,'string'));
 set(handles.slider_frame,'value',ff);
 set(handles.edit_frame,'string',num2str(ff));
 showframe(ff,handles);
@@ -504,6 +565,7 @@ if handles.currframe > length(handles.time)
     handles.currframe = length(handles.time);
 end
 slider_frame_Callback(handles.slider_frame,[],handles);
+set(handles.edit_frame,'string',num2str(ff+1));
 % Setappdata
 setappdata(handles.figure,'handles',handles);
 
