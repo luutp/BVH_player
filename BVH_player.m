@@ -285,8 +285,8 @@ OriLeftFoot = kin.Data.sensorOrientationEuler.LeftFoot(:,2);
 OriRightFoot = kin.Data.sensorOrientationEuler.RightFoot(:,2);
 plot(3*AccRightFoot,'r');
 plot(3*AccLeftFoot,'k');
-plot(OriLeftFoot,'r.');
-plot(OriRightFoot,'k.');
+plot(OriRightFoot,'r.');
+plot(OriLeftFoot,'k.');
 selcolor = [255 0 0; 154 154 154; 0 0 0; 255 109 182]./256;
 set(gca,'xlim',[tsignal(1) tsignal(end)],'ylim',[-100 50]);
 for i = 1 : size(gcinfo.index,1)
