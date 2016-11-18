@@ -254,13 +254,13 @@ set(handles.edit_frame,'string',num2str(sl_val));
 % UPdate jlistbox_matdata
 gcinfo = gclist2info(uigetjlistbox(handles.jlistbox_matdata,'select','all'));
 gcid = find(gcinfo.index(:,1) <= sl_val,1,'last');
-if isempty(gcid) 
-    setval = 0;
-elseif gcid >= size(gcinfo.index,1), setval = size(gcinfo.index,1)-1;
-else
-    setval = gcid-1;
-end
-set(handles.jlistbox_matdata,'SelectedIndex',setval);
+% if isempty(gcid) 
+%     setval = 0;
+% elseif gcid >= size(gcinfo.index,1), setval = size(gcinfo.index,1)-1;
+% else
+%     setval = gcid-1;
+% end
+% set(handles.jlistbox_matdata,'SelectedIndex',setval);
 if isfield(handles,'skeleton')    
     showframe(sl_val,handles);
 end
