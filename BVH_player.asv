@@ -85,7 +85,7 @@ uistring={'Import GC',...
     'pushbutton','pushbutton'},...
     'uistring',uistring,...
     'gridsize',[1 10],'gridmargin',8,...
-    'hweight',[1.5 0.5, 1 1 1 1 1, 1 1.2 1.2],'vweight',1);
+    'hweight',[1 0.5, 1 1 1 1 1, 1 1.2 1.2],'vweight',1);
 
 % List box to display current GC data;
 uistring={'',...
@@ -149,7 +149,6 @@ setappdata(handles.figure,'handles',handles);
 set(handles.combobox_currdir,'ActionPerformedCallback',{@combobox_currdir_Callback,handles});
 % Checkbox
 set(handles.checkbox_defaultview,'Callback',{@checkbox_defaultview_Callback,handles});
-set(handles.checkbox_importgc,'Callback',{@checkbox_importgc_Callback,handles});
 % Keyboard control
 set(handles.figure,'WindowKeyPressFcn',{@KeyboardThread_Callback,handles});
 set(handles.jlistbox_filenameinput,'KeyPressedCallback',{@KeyboardThread_Callback,handles});
@@ -364,23 +363,11 @@ slider_frame_Callback(handles.slider_frame,[],handles)
 % Setappdata
 setappdata(handles.figure,'handles',handles);
 
-function checkbox_importgc_Callback(hObject,eventdata,handles)
-handles=getappdata(handles.figure,'handles');
-% Setappdata
-if get(hObject,'value') == 1
-    thisstr = uigetjlistbox(handles.jlistbox_matdata);
-    gcinfo = gclist2info(thisstr);
-    updateuigcevent(gcinfo,handles);
-end
-setappdata(handles.figure,'handles',handles);
-
 function jlistbox_matdata_Callback(hObject,eventdata,handles)
 handles=getappdata(handles.figure,'handles');
 thisstr = uigetjlistbox(hObject);
 gcinfo = gclist2info(thisstr);
-if get(handles.checkbox_importgc,'value') == 1
-    updateuigcevent(gcinfo,handles);
-end
+% updateuigcevent(gcinfo,handles);
 set(handles.edit_frame,'string',num2str(gcinfo.index(1)));
 set(handles.slider_frame,'value',gcinfo.index(1));
 slider_frame_Callback(handles.slider_frame,[],handles);
