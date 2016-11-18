@@ -535,11 +535,11 @@ axes(handles.player);
 cla;hold on;
 skeleton = handles.skeleton;
 body = 1 : length(skeleton);
-body([8,13,18,23,28]) = []; % Remove unneccessary parts.
+body([8,13,18]) = []; % Remove unneccessary parts.
 for i = 1:length(body)
     nn = body(i);
-    if any(nn==[19 20 21 22]), selcolor = 'r'; 
-    elseif any(nn==[24 25 26 27]), selcolor = 'k'; 
+    if any(nn==[19 20 21 22 23]), selcolor = 'r'; 
+    elseif any(nn==[24 25 26 27 28]), selcolor = 'k'; 
     else selcolor = [154 154 154]./256;
     end
     plot3(-skeleton(nn).Dxyz(1,ff),-skeleton(nn).Dxyz(3,ff),skeleton(nn).Dxyz(2,ff),'.','markersize',20,...
