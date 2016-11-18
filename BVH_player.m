@@ -141,6 +141,8 @@ set(handles.combobox_gclabel,'SelectedIndex',0,'MaximumRowCount',10);
 set(handles.slider_frame,'min',0,'max',10000);
 handles.keyholder = '';
 set(handles.checkbox_defaultview,'value',1);
+set(handles.signalax,'color','none');
+uistack(handles.signalannoax,'top');
 % Setappdata
 setappdata(handles.figure,'handles',handles);
 % set(handles.combobox_gclabel,'background',javax.swing.plaf.ColorUIResource([256 0 0]))
@@ -287,14 +289,14 @@ OriRightFoot = kin.Data.sensorOrientationEuler.RightFoot(:,2);
 PosLeftFoot = kin.Data.position.LeftFoot(:,3);
 PosRightFoot = kin.Data.position.RightFoot(:,3);
 
-plot(2*(AccRightFoot-mean(AccRightFoot))+35,'r');
-plot(0.5*(OriRightFoot-mean(OriRightFoot))+35,'r.');
-plot(2*(AccLeftFoot-mean(AccLeftFoot))+30,'k');
-plot(0.5*(OriLeftFoot-mean(OriLeftFoot))+30,'k.');
+plot(2*(AccRightFoot-mean(AccRightFoot))+30,'r');
+plot(0.5*(OriRightFoot-mean(OriRightFoot))+30,'r.');
+plot(2*(AccLeftFoot-mean(AccLeftFoot))+25,'k');
+plot(0.5*(OriLeftFoot-mean(OriLeftFoot))+25,'k.');
 
-plot(150*(PosRightFoot-mean(PosRightFoot))-50,'r-.');
+plot(300*(PosRightFoot-mean(PosRightFoot))-50,'r-.');
 plot(0.5*(OriRightFoot-mean(OriRightFoot))-50,'r.');
-plot(150*(PosLeftFoot-mean(PosLeftFoot))-60,'k-.');
+plot(300*(PosLeftFoot-mean(PosLeftFoot))-60,'k-.');
 plot(0.5*(OriLeftFoot-mean(OriLeftFoot))-60,'k.');
 
 selcolor = [255 0 0; 154 154 154; 0 0 0; 255 109 182]./256;
@@ -316,8 +318,8 @@ limx = [0 100]; limy = [-100 50];
 set(gca,'xlim', limx,'ylim',limy);
 
 selcolor = [255 0 0; 154 154 154; 0 0 0; 255 109 182]./256;
-hdl = class_line('xdata',mean(limx).*[1 1],'ydata',[1.2*limy(2), mean(limy)],...
-    'linecolor','r');
+hdl = class_line('xdata',mean(limx).*[1 1],'ydata',[1.1*limy(2), limy(1)],...
+    'linecolor','g');
 set(hdl.textobj,'position',hdl.startpoint.position,'string','Current Frame',...
     'verticalalignment','bottom','horizontalalignment','center','fontsize',8,...
     'fontweight','bold','textgap',[0 0]);
