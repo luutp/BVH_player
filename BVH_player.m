@@ -55,6 +55,7 @@ w=0.4; h=0.35;
 handles.player = axes;
 handles.signalax = axes;
 handles.signalannoax = axes;
+handles.mapax = axes;
 % Player control button
 uistring={icontext(handles.iconlist.action.play,'Start'),...
     '',...
@@ -133,6 +134,7 @@ uialign(container_matdata,container_filelist,'align','southwest','scale',[0.85 1
 uialign(container_save,container_matdata,'align','southwest','scale',[1 0.1],'gap',[0 -0.01]);
 uialign(uipanel_radio,container_gcevent,'align','southwest','scale',[1 2.5],'gap',[0 -0.01]);
 set(handles.signalannoax,'position',get(handles.signalax,'position'));
+uialign(handles.mapax,handles.player,'align','west','scale',[0.35 0.8],'gap',[0.13 0]);
 % Initialize
 uisetjcombolist(handles.combobox_currdir,{cd});
 uijlist_setfiles(handles.jlistbox_filenameinput,cd);
@@ -142,7 +144,10 @@ set(handles.slider_frame,'min',0,'max',10000);
 handles.keyholder = '';
 set(handles.checkbox_defaultview,'value',1);
 set(handles.signalax,'color','none');
+set(handles.mapax,'color','none');
 uistack(handles.signalannoax,'top');
+uistack(handles.mapax,'top');
+
 % Setappdata
 setappdata(handles.figure,'handles',handles);
 % set(handles.combobox_gclabel,'background',javax.swing.plaf.ColorUIResource([256 0 0]))
@@ -178,7 +183,7 @@ handles=getappdata(handles.figure,'handles');
 val = get(hObject,'value');
 if val == 1
     axes(handles.player);
-    view(-45,-30);
+    view([0 0]);
 end
 % Setappdata
 setappdata(handles.figure,'handles',handles);
@@ -235,10 +240,20 @@ elseif strcmpi(ext,'.mat')
     anno_signalax(handles);
     jlistbox_matdata_Callback(handles.jlistbox_matdata,[],handles);
 elseif strcmpi(ext,'.bvh')
-    [handles.skeleton,handles.time] = loadbvh(fullfile(currdir,filename));
-    set(handles.slider_frame,'min',0,'max',length(handles.time),...
-        'sliderstep',[1 10]./length(handles.time));
-    showframe(1,handles);
+    [skeleton,time] = loadbvh(fullfile(currdir,filename));
+    set(handles.slider_frame,'min',0,'max',length(time),...
+        'sliderstep',[1 10]./length(time));
+    for i = 1: length(skeleton)
+        thisbody = skeleton(i).Dxyz;
+        parent(i) = skeleton(i).parent;
+        for j = 1 : length(time)
+            Dxyz(:,i,j) = thisbody(:,j);
+        end
+    end    
+    assignin('base','Dxyz',Dxyz);
+    assignin('base','parent',parent);
+    assignin('base','skeleton',skeleton);
+    showframe(1,handles);    
     fprintf('bvh file is loaded.\n');
 else
 end
@@ -261,7 +276,7 @@ gcid = find(gcinfo.index(:,1) <= sl_val,1,'last');
 %     setval = gcid-1;
 % end
 % set(handles.jlistbox_matdata,'SelectedIndex',setval);
-if isfield(handles,'skeleton')    
+if uh_isvarexist('skeleton')
     showframe(sl_val,handles);
 end
 % Scroll signal plot axis
@@ -537,36 +552,57 @@ setappdata(handles.figure,'handles',handles);
 function showframe(ff,handles)
 axes(handles.player); 
 cla;hold on;
-skeleton = handles.skeleton;
-body = 1 : length(skeleton);
+Dxyz = evalin('base','Dxyz');
+parent = evalin('base','parent');
+body = 1 : size(Dxyz,2);
 body([8,13,18]) = []; % Remove unneccessary parts.
-for i = 1:length(body)
+plot3(Dxyz(1,body,ff),Dxyz(3,body,ff),Dxyz(2,body,ff),'.','markersize',20,...
+    'color',[154 154 154]./256);
+for i = 1 : length(body)
     nn = body(i);
-    if any(nn==[19 20 21 22 23]), selcolor = 'r'; 
-    elseif any(nn==[24 25 26 27 28]), selcolor = 'k'; 
+    if any(nn==[19 20 21 22 23]), selcolor = 'r';
+    elseif any(nn==[24 25 26 27 28]), selcolor = 'k';
     else selcolor = [154 154 154]./256;
     end
-    plot3(-skeleton(nn).Dxyz(1,ff),-skeleton(nn).Dxyz(3,ff),skeleton(nn).Dxyz(2,ff),'.','markersize',20,...
-        'color',selcolor)
-%     text(-skeleton(nn).Dxyz(1,ff),-skeleton(nn).Dxyz(3,ff),skeleton(nn).Dxyz(2,ff),sprintf('%d',nn));
-    parent = skeleton(nn).parent;
-    if parent > 0
-        plot3([-skeleton(parent).Dxyz(1,ff) -skeleton(nn).Dxyz(1,ff)],...
-            [-skeleton(parent).Dxyz(3,ff) -skeleton(nn).Dxyz(3,ff)],...
-            [skeleton(parent).Dxyz(2,ff) skeleton(nn).Dxyz(2,ff)],...
+    thisparent = parent(nn);
+    if thisparent > 0
+        plot3([Dxyz(1,thisparent,ff) Dxyz(1,nn,ff)],...
+            [Dxyz(3,thisparent,ff) Dxyz(3,nn,ff)],...
+            [Dxyz(2,thisparent,ff) Dxyz(2,nn,ff)],...
             'color',selcolor);
-    end        
+    end
 end
-rectcenter = [-skeleton(21).Dxyz(1,ff),-skeleton(21).Dxyz(3,ff)];
-class_rectangle('center',class_point('xdata',rectcenter(1),'ydata',rectcenter(2)),...
-    'width',100,'height',100,'facealpha',0.1,'facecolor',[154 154 154]./256,'draw',1);
+rtoe = [Dxyz(1,23,ff),Dxyz(3,23,ff), Dxyz(3,23,ff)];
 if get(handles.checkbox_defaultview,'value')==1
-    view(-45, -30)
+    view([0 0])
 else
 end
-axis equal off
-% ylabel('y axis');
-% drawnow
+if ff < 201, sff = 1 : ff;
+else sff = ff-200 : ff+200;
+end
+plot3(squeeze(Dxyz(1,23,sff)),squeeze(Dxyz(3,23,sff)),squeeze(Dxyz(2,23,sff)),'r:');
+plot3(squeeze(Dxyz(1,28,sff)),squeeze(Dxyz(3,28,sff)),squeeze(Dxyz(2,28,sff)),'k:');
+plot3(squeeze(Dxyz(1,23,:)),squeeze(Dxyz(3,23,:)),zeros(1,size(Dxyz,3)),'color','k')
+axis equal off;
+set(gca,'xlim',[rtoe(1)-200 rtoe(1)+200],'ylim',[rtoe(2)-200 rtoe(2)+200],'zlim',[-20 180]);
+
+
+axes(handles.mapax);
+cla; hold on;
+for i = 1 : length(body)
+    nn = body(i);    
+    thisparent = parent(nn);
+    if thisparent > 0
+        plot3([Dxyz(1,thisparent,ff) Dxyz(1,nn,ff)],...
+            [Dxyz(3,thisparent,ff) Dxyz(3,nn,ff)],...
+            [Dxyz(2,thisparent,ff) Dxyz(2,nn,ff)],...
+            'color',[0 109 219]./256);
+    end
+end
+plot(squeeze(Dxyz(1,7,:)),squeeze(Dxyz(3,7,:)),'color',[154 154 154]./256);hold on;
+class_text('position',[Dxyz(1,7,1),Dxyz(3,7,1)],'string','START','fontsize',8,'show',1);
+view(45,30);
+axis equal off;
 
 function liststr = gcinfo2list(matdata,label)
 for i = 1 : size(matdata,1)
