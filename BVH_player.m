@@ -16,7 +16,7 @@ import java.util.*;
 import java.lang.*;
 % DEFINES
 handles.filekeyword = 'MODULE';
-global gvar;
+global gvar Dxyz;
 gvar=def_gvar;
 %====STEP 1: FRAME====
 handles.iconlist=getmatlabicons;
@@ -474,19 +474,17 @@ gclabel = get(handles.combobox_gclabel,'selecteditem');
 gcindex = get(handles.jlistbox_matdata,'SelectedIndex') + 1;
 currlist = uigetjlistbox(handles.jlistbox_matdata,'select','all');
 gcinfo = gclist2info(currlist);
-currgcdata = gcinfo.index;
-currgclabel = gcinfo.label;
 insertval = [str2num(get(handles.edit_gcevent1,'string')),...
     str2num(get(handles.edit_gcevent2,'string')),...
     str2num(get(handles.edit_gcevent3,'string')),...
     str2num(get(handles.edit_gcevent4,'string')),...
     str2num(get(handles.edit_gcevent5,'string'))];
-newgcdata = [currgcdata(1:gcindex,:); insertval; currgcdata(gcindex+1:end,:)];
-newgclabel = transpose({currgclabel{1:gcindex}, gclabel, currgclabel{gcindex+1:end}});
 % Update GUI;
-uisetjlistbox(handles.jlistbox_matdata,gcinfo2list(newgcdata,newgclabel));
+model=get(handles.jlistbox_matdata,'Model');
+newitem = gcinfo2list(insertval,gclabel);
+model.insertElementAt(newitem{1},gcindex);
 set(handles.jlistbox_matdata,'selectedIndex',gcindex);
-updateSignalplot(handles)
+updateSignalplot(handles);
 % Setappdata
 setappdata(handles.figure,'handles',handles);
 
@@ -554,6 +552,7 @@ axes(handles.player);
 cla;hold on;
 Dxyz = evalin('base','Dxyz');
 parent = evalin('base','parent');
+
 body = 1 : size(Dxyz,2);
 body([8,13,18]) = []; % Remove unneccessary parts.
 plot3(Dxyz(1,body,ff),Dxyz(3,body,ff),Dxyz(2,body,ff),'.','markersize',20,...
@@ -578,14 +577,15 @@ if get(handles.checkbox_defaultview,'value')==1
 else
 end
 if ff < 201, sff = 1 : ff;
-else sff = ff-200 : ff+200;
+elseif 201 <= ff && ff < size(Dxyz,3)-199 
+    sff = ff-200 : ff+200;
+else sff = ff-200 : size(Dxyz,3);
 end
 plot3(squeeze(Dxyz(1,23,sff)),squeeze(Dxyz(3,23,sff)),squeeze(Dxyz(2,23,sff)),'r:');
 plot3(squeeze(Dxyz(1,28,sff)),squeeze(Dxyz(3,28,sff)),squeeze(Dxyz(2,28,sff)),'k:');
 plot3(squeeze(Dxyz(1,23,:)),squeeze(Dxyz(3,23,:)),zeros(1,size(Dxyz,3)),'color','k')
 axis equal off;
 set(gca,'xlim',[rtoe(1)-200 rtoe(1)+200],'ylim',[rtoe(2)-200 rtoe(2)+200],'zlim',[-20 180]);
-
 
 axes(handles.mapax);
 cla; hold on;
@@ -671,13 +671,15 @@ setappdata(handles.figure,'handles',handles);
 
 function timerFcn_Callback(hObject,event,handles)
 handles=getappdata(handles.figure,'handles');
+tic
 ff = str2num(get(handles.edit_frame,'string'));
 set(handles.slider_frame,'value',ff);
 set(handles.edit_frame,'string',num2str(ff));
 % showframe(ff,handles);
 slider_frame_Callback(handles.slider_frame,[],handles);
-set(handles.edit_frame,'string',num2str(ff+1));
+set(handles.edit_frame,'string',num2str(ff+3));
 % Setappdata
+toc
 setappdata(handles.figure,'handles',handles);
 
 function timerStopFcn_Callback(hObject,event,handles)
@@ -712,6 +714,7 @@ if any([strcmpi(key,'g'),strcmpi(key,'ctrl'),strcmpi(key,'control'),...
     setappdata(handles.figure,'handles',handles);
     return;
 end
+fprintf('KeyPressed: %s\n',key);
 % Go to component;
 if strcmpi(handles.keyholder,'g')
     if strcmpi(key,'l') % Set focus on function list
@@ -731,32 +734,37 @@ elseif strcmpi(handles.keyholder,'shift')
 elseif strcmpi(handles.keyholder,'ctrl') || strcmpi(handles.keyholder,'control') && strcmpi(key,'s')
     pushbutton_save_Callback(handles.pushbutton_save,[],handles);
 else
-    if strcmpi(key,'return') || strcmpi(key,'enter') && hObject == handles.jlistbox_matdata
+    if (strcmpi(key,'return') || strcmpi(key,'enter')) && hObject ~= handles.jlistbox_filenameinput
         pushbutton_insert_Callback(handles.pushbutton_insert,[],handles);        
-    elseif strcmpi(key,'return') || strcmpi(key,'enter') && hObject == handles.jlistbox_filenameinput
+    elseif (strcmpi(key,'return') || strcmpi(key,'enter')) && hObject == handles.jlistbox_filenameinput
         handles = jlistbox_filenameinput_load(hObject,handles);
-    elseif strcmpi(key,'up') || strcmpi(key,'down') && hObject == handles.jlistbox_matdata
+    elseif strcmpi(key,'uparrow') || strcmpi(key,'downarrow')
+        handles.jlistbox_matdata.requestFocus
+    elseif strcmpi(key,'up') || strcmpi(key,'down')
         jlistbox_matdata_Callback(handles.jlistbox_matdata,[],handles);
-    elseif strcmpi(key,'left') && hObject == handles.jlistbox_matdata
+    elseif strcmpi(key,'left')
         set(handles.slider_frame,'value',get(handles.slider_frame,'value')-1);
         slider_frame_Callback(handles.slider_frame,[],handles);
-    elseif strcmpi(key,'right') && hObject == handles.jlistbox_matdata
+    elseif strcmpi(key,'right')
         set(handles.slider_frame,'value',get(handles.slider_frame,'value')+1);
         slider_frame_Callback(handles.slider_frame,[],handles);
-    elseif strcmpi(key,'space') && hObject == handles.jlistbox_matdata
-        set(handles.slider_frame,'value',get(handles.slider_frame,'value')+4);
+    elseif strcmpi(key,'space')
+        currval = get(handles.slider_frame,'value');
+        newval = currval + 4;
+        if newval > get(handles.slider_frame,'max'), newval = newval-4; end;
+        set(handles.slider_frame,'value',newval);
         slider_frame_Callback(handles.slider_frame,[],handles);
-    elseif strcmpi(key,'a') && hObject == handles.jlistbox_matdata           
+    elseif strcmpi(key,'a')            
         set(handles.edit_gcevent1,'string',get(handles.edit_frame,'string'));   % Add current frame to gait event 1
-    elseif strcmpi(key,'s') && hObject == handles.jlistbox_matdata
+    elseif strcmpi(key,'s') 
         set(handles.edit_gcevent2,'string',get(handles.edit_frame,'string'));   % Add current frame to gait event 2
-    elseif strcmpi(key,'d') && hObject == handles.jlistbox_matdata
+    elseif strcmpi(key,'d') 
         set(handles.edit_gcevent3,'string',get(handles.edit_frame,'string'));   % Add current frame to gait event 3
-    elseif strcmpi(key,'f') && hObject == handles.jlistbox_matdata
+    elseif strcmpi(key,'f') 
         set(handles.edit_gcevent4,'string',get(handles.edit_frame,'string'));   % Add current frame to gait event 4
-    elseif strcmpi(key,'r') && hObject == handles.jlistbox_matdata
+    elseif strcmpi(key,'r') 
         set(handles.edit_gcevent5,'string',get(handles.edit_frame,'string'));   % Add current frame to gait event 5
-    elseif strcmpi(key,'e') && hObject == handles.jlistbox_matdata
+    elseif strcmpi(key,'e') 
         idx = get(handles.combobox_gclabel,'selectedindex');
         if idx == get(handles.combobox_gclabel,'ItemCount')-1, idx = 0;
         else idx = idx + 1; end
