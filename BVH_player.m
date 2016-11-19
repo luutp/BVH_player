@@ -97,14 +97,17 @@ uistring={'',...
     'uistring',uistring,...    
     'gridsize',[1 1],'gridmargin',5);
 % Save matdata
-uistring={icontext(handles.iconlist.action.delete,'Del'),'',...
+uistring={icontext(handles.iconlist.arrowup,'Move'),...
+    icontext(handles.iconlist.arrowdown,'Move'),...
+    icontext(handles.iconlist.action.delete,'Del'),...
+    '',...
     icontext(handles.iconlist.action.save,'Save'),...
     };
-[container_save,handles.pushbutton_del,~,handles.pushbutton_save,...    
-    ]=uigridcomp({'pushbutton','label',...
+[container_save,handles.pushbutton_moveup,handles.pushbutton_movedown,handles.pushbutton_del,~,handles.pushbutton_save,...    
+    ]=uigridcomp({'pushbutton','pushbutton','pushbutton','label',...
     'pushbutton'},...
     'uistring',uistring,...    
-    'gridsize',[1 3],'gridmargin',5,'hweight',[2 6 2]);
+    'gridsize',[1 5],'gridmargin',5,'hweight',[1.5 1.5 1.5 3.5 2]);
 % Option to select the landed leg before transition (LW-SA, SA-LW, LW-SD, SD-LW)
 titlename = {'LW-SA1','SA-LW1','LW-SD1','SD-LW1',...
     'LW-SA2','SA-LW2','LW-SD2','SD-LW2'};
@@ -172,6 +175,8 @@ set(handles.pushbutton_save,'Callback',{@pushbutton_save_Callback,handles});
 set(handles.pushbutton_del,'Callback',{@pushbutton_del_Callback,handles});
 set(handles.pushbutton_insert,'Callback',{@pushbutton_insert_Callback,handles});
 set(handles.pushbutton_update,'Callback',{@pushbutton_update_Callback,handles});
+set(handles.pushbutton_moveup,'Callback',{@pushbutton_moveup_Callback,handles});
+set(handles.pushbutton_movedown,'Callback',{@pushbutton_movedown_Callback,handles});
 % Slider and edit text
 set(handles.edit_frame,'Callback',{@edit_frame_Callback,handles});
 set(handles.slider_frame,'Callback',{@slider_frame_Callback,handles});
@@ -485,6 +490,11 @@ newitem = gcinfo2list(insertval,gclabel);
 model.insertElementAt(newitem{1},gcindex);
 set(handles.jlistbox_matdata,'selectedIndex',gcindex);
 updateSignalplot(handles);
+set(handles.edit_gcevent1,'backgroundcolor','w');
+set(handles.edit_gcevent2,'backgroundcolor','w');
+set(handles.edit_gcevent3,'backgroundcolor','w');
+set(handles.edit_gcevent4,'backgroundcolor','w');
+set(handles.edit_gcevent5,'backgroundcolor','w');
 % Setappdata
 setappdata(handles.figure,'handles',handles);
 
@@ -504,6 +514,11 @@ newgclabel = gcinfo.label; newgclabel{gcindex} = gclabel;
 % Update GUI;
 uisetjlistbox(handles.jlistbox_matdata,gcinfo2list(newgcdata,newgclabel));
 set(handles.jlistbox_matdata,'selectedIndex',gcindex-1);
+set(handles.edit_gcevent1,'backgroundcolor','w');
+set(handles.edit_gcevent2,'backgroundcolor','w');
+set(handles.edit_gcevent3,'backgroundcolor','w');
+set(handles.edit_gcevent4,'backgroundcolor','w');
+set(handles.edit_gcevent5,'backgroundcolor','w');
 updateSignalplot(handles)
 % Setappdata
 setappdata(handles.figure,'handles',handles);
@@ -544,6 +559,28 @@ kin.gc.time = (gcinfo.index-1)./30;
 fprintf('Saving...%s\n',handles.kinfile.filename);
 handles.kinfile.savevars(kin);
 fprintf('DONE...%s\n',thisFuncName);
+% Setappdata
+setappdata(handles.figure,'handles',handles);
+
+function pushbutton_moveup_Callback(hObject,eventdata,handles)
+handles=getappdata(handles.figure,'handles');
+selrow = get(handles.jlistbox_matdata,'selectedIndex');
+model=get(handles.jlistbox_matdata,'Model');
+insertitem = model.getElementAt(selrow);
+model.insertElementAt(insertitem,selrow-1);
+model.removeElementAt(get(handles.jlistbox_matdata,'selectedIndex'));
+set(handles.jlistbox_matdata,'selectedIndex',selrow-1);
+% Setappdata
+setappdata(handles.figure,'handles',handles);
+
+function pushbutton_movedown_Callback(hObject,eventdata,handles)
+handles=getappdata(handles.figure,'handles');
+selrow = get(handles.jlistbox_matdata,'selectedIndex');
+model=get(handles.jlistbox_matdata,'Model');
+insertitem = model.getElementAt(selrow);
+model.insertElementAt(insertitem,selrow+2);
+model.removeElementAt(get(handles.jlistbox_matdata,'selectedIndex'));
+set(handles.jlistbox_matdata,'selectedIndex',selrow+1);
 % Setappdata
 setappdata(handles.figure,'handles',handles);
 
@@ -756,14 +793,19 @@ else
         slider_frame_Callback(handles.slider_frame,[],handles);
     elseif strcmpi(key,'a')            
         set(handles.edit_gcevent1,'string',get(handles.edit_frame,'string'));   % Add current frame to gait event 1
+        set(handles.edit_gcevent1,'backgroundcolor',[154 154 154]./256);
     elseif strcmpi(key,'s') 
         set(handles.edit_gcevent2,'string',get(handles.edit_frame,'string'));   % Add current frame to gait event 2
+        set(handles.edit_gcevent2,'backgroundcolor',[154 154 154]./256);
     elseif strcmpi(key,'d') 
         set(handles.edit_gcevent3,'string',get(handles.edit_frame,'string'));   % Add current frame to gait event 3
+        set(handles.edit_gcevent3,'backgroundcolor',[154 154 154]./256);
     elseif strcmpi(key,'f') 
         set(handles.edit_gcevent4,'string',get(handles.edit_frame,'string'));   % Add current frame to gait event 4
+        set(handles.edit_gcevent4,'backgroundcolor',[154 154 154]./256);
     elseif strcmpi(key,'r') 
         set(handles.edit_gcevent5,'string',get(handles.edit_frame,'string'));   % Add current frame to gait event 5
+        set(handles.edit_gcevent5,'backgroundcolor',[154 154 154]./256);
     elseif strcmpi(key,'e') 
         idx = get(handles.combobox_gclabel,'selectedindex');
         if idx == get(handles.combobox_gclabel,'ItemCount')-1, idx = 0;
