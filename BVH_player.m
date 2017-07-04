@@ -286,8 +286,9 @@ if uh_isvarexist('skeleton')
 end
 % Scroll signal plot axis
 axes(handles.signalax);
-if sl_val < 50,  tsignal = 1 : 50;
-else tsignal = sl_val-50 : sl_val+50; % Get 100 frames around current frame
+frameshow = 100;
+if sl_val < frameshow,  tsignal = 1 : frameshow;
+else tsignal = sl_val-frameshow : sl_val+frameshow; % Get 100 frames around current frame
 end
 set(gca,'xlim',[tsignal(1) tsignal(end)],'ylim',[-100 50]);
 setappdata(handles.figure,'handles',handles);
@@ -298,8 +299,9 @@ gcinfo = gclist2info(uigetjlistbox(handles.jlistbox_matdata,'select','all'));
 
 axes(handles.signalax);
 cla; hold on;
-if sl_val < 50,  tsignal = 1 : 50;
-else tsignal = sl_val-50 : sl_val+50; % Get 100 frames around current frame
+frameshow = 100;
+if sl_val < frameshow,  tsignal = 1 : frameshow;
+else tsignal = sl_val-frameshow : sl_val+frameshow; % Get 100 frames around current frame
 end
 kin = evalin('base','kin');
 AccLeftFoot = kin.Data.sensorAcceleration.LeftFoot(:,3);
@@ -309,14 +311,14 @@ OriRightFoot = kin.Data.sensorOrientationEuler.RightFoot(:,2);
 PosLeftFoot = kin.Data.position.LeftFoot(:,3);
 PosRightFoot = kin.Data.position.RightFoot(:,3);
 
-plot(2*(AccRightFoot-mean(AccRightFoot))+30,'r');
-plot(0.5*(OriRightFoot-mean(OriRightFoot))+30,'r.');
-plot(2*(AccLeftFoot-mean(AccLeftFoot))+25,'k');
-plot(0.5*(OriLeftFoot-mean(OriLeftFoot))+25,'k.');
+plot(2*(AccRightFoot-mean(AccRightFoot))+15,'r');
+plot(0.5*(OriRightFoot-mean(OriRightFoot))+15,'r.');
+plot(2*(AccLeftFoot-mean(AccLeftFoot))+5,'k');
+plot(0.5*(OriLeftFoot-mean(OriLeftFoot))+5,'k.');
 
-plot(300*(PosRightFoot-mean(PosRightFoot))-50,'r-.');
+plot(100*(PosRightFoot-mean(PosRightFoot))-50,'r-.');
 plot(0.5*(OriRightFoot-mean(OriRightFoot))-50,'r.');
-plot(300*(PosLeftFoot-mean(PosLeftFoot))-60,'k-.');
+plot(100*(PosLeftFoot-mean(PosLeftFoot))-60,'k-.');
 plot(0.5*(OriLeftFoot-mean(OriLeftFoot))-60,'k.');
 
 selcolor = [255 0 0; 154 154 154; 0 0 0; 255 109 182]./256;
@@ -592,7 +594,18 @@ parent = evalin('base','parent');
 
 body = 1 : size(Dxyz,2);
 body([8,13,18]) = []; % Remove unneccessary parts.
-plot3(Dxyz(1,body,ff),Dxyz(3,body,ff),Dxyz(2,body,ff),'.','markersize',20,...
+% 170703: Modify to Xsens updated software.
+% The Dxyz variable in the skeleton change
+% sequence. 
+%  first row and third row have been switched/
+% Z direction now includes height but drifts very
+% much
+xrow = 1; % v2.0
+yrow = 3;
+zrow = 2;
+% plot3(Dxyz(1,body,ff),Dxyz(3,body,ff),Dxyz(2,body,ff),'.','markersize',20,...
+%     'color',[154 154 154]./256);
+plot3(Dxyz(xrow,body,ff),Dxyz(yrow,body,ff),Dxyz(zrow,body,ff),'.','markersize',20,...
     'color',[154 154 154]./256);
 for i = 1 : length(body)
     nn = body(i);
@@ -602,13 +615,13 @@ for i = 1 : length(body)
     end
     thisparent = parent(nn);
     if thisparent > 0
-        plot3([Dxyz(1,thisparent,ff) Dxyz(1,nn,ff)],...
-            [Dxyz(3,thisparent,ff) Dxyz(3,nn,ff)],...
-            [Dxyz(2,thisparent,ff) Dxyz(2,nn,ff)],...
+        plot3([Dxyz(xrow,thisparent,ff) Dxyz(xrow,nn,ff)],...
+            [Dxyz(yrow,thisparent,ff) Dxyz(yrow,nn,ff)],...
+            [Dxyz(zrow,thisparent,ff) Dxyz(zrow,nn,ff)],...
             'color',selcolor);
     end
 end
-rtoe = [Dxyz(1,23,ff),Dxyz(3,23,ff), Dxyz(3,23,ff)];
+rtoe = [Dxyz(xrow,23,ff),Dxyz(yrow,23,ff), Dxyz(zrow,23,ff)];
 if get(handles.checkbox_defaultview,'value')==1
     view([0 0])
 else
@@ -618,11 +631,11 @@ elseif 201 <= ff && ff < size(Dxyz,3)-199
     sff = ff-200 : ff+200;
 else sff = ff-200 : size(Dxyz,3);
 end
-plot3(squeeze(Dxyz(1,23,sff)),squeeze(Dxyz(3,23,sff)),squeeze(Dxyz(2,23,sff)),'r:');
-plot3(squeeze(Dxyz(1,28,sff)),squeeze(Dxyz(3,28,sff)),squeeze(Dxyz(2,28,sff)),'k:');
-plot3(squeeze(Dxyz(1,23,:)),squeeze(Dxyz(3,23,:)),zeros(1,size(Dxyz,3)),'color','k')
+plot3(squeeze(Dxyz(xrow,23,sff)),squeeze(Dxyz(yrow,23,sff)),squeeze(Dxyz(zrow,23,sff)),'r:');
+plot3(squeeze(Dxyz(xrow,28,sff)),squeeze(Dxyz(yrow,28,sff)),squeeze(Dxyz(zrow,28,sff)),'k:');
+plot3(squeeze(Dxyz(xrow,23,:)),squeeze(Dxyz(yrow,23,:)),zeros(zrow,size(Dxyz,3)),'color','k')
 axis equal off;
-set(gca,'xlim',[rtoe(1)-200 rtoe(1)+200],'ylim',[rtoe(2)-200 rtoe(2)+200],'zlim',[-20 180]);
+set(gca,'xlim',[rtoe(1)-200 rtoe(1)+200],'ylim',[rtoe(2)-200 rtoe(2)+200],'zlim',[rtoe(3)-20 rtoe(3)+180]);
 
 axes(handles.mapax);
 cla; hold on;
@@ -630,14 +643,14 @@ for i = 1 : length(body)
     nn = body(i);    
     thisparent = parent(nn);
     if thisparent > 0
-        plot3([Dxyz(1,thisparent,ff) Dxyz(1,nn,ff)],...
-            [Dxyz(3,thisparent,ff) Dxyz(3,nn,ff)],...
-            [Dxyz(2,thisparent,ff) Dxyz(2,nn,ff)],...
+        plot3([Dxyz(xrow,thisparent,ff) Dxyz(xrow,nn,ff)],...
+            [Dxyz(yrow,thisparent,ff) Dxyz(yrow,nn,ff)],...
+            [Dxyz(zrow,thisparent,ff) Dxyz(zrow,nn,ff)],...
             'color',[0 109 219]./256);
     end
 end
-plot(squeeze(Dxyz(1,7,:)),squeeze(Dxyz(3,7,:)),'color',[154 154 154]./256);hold on;
-class_text('position',[Dxyz(1,7,1),Dxyz(3,7,1)],'string','START','fontsize',8,'show',1);
+plot(squeeze(Dxyz(xrow,7,:)),squeeze(Dxyz(yrow,7,:)),'color',[154 154 154]./256);hold on;
+class_text('position',[Dxyz(xrow,7,1),Dxyz(yrow,7,1)],'string','START','fontsize',8,'show',1);
 view(45,30);
 axis equal off;
 
@@ -708,15 +721,16 @@ setappdata(handles.figure,'handles',handles);
 
 function timerFcn_Callback(hObject,event,handles)
 handles=getappdata(handles.figure,'handles');
-tic
 ff = str2num(get(handles.edit_frame,'string'));
-set(handles.slider_frame,'value',ff);
-set(handles.edit_frame,'string',num2str(ff));
-% showframe(ff,handles);
 slider_frame_Callback(handles.slider_frame,[],handles);
-set(handles.edit_frame,'string',num2str(ff+3));
+updateval = ff+3;
+if updateval > get(handles.slider_frame,'max')
+    updateval = get(handles.slider_frame,'max'); 
+    pushbutton_play_Callback(handles.pushbutton_play,[],handles);
+end
+set(handles.edit_frame,'string',num2str(updateval));
+set(handles.slider_frame,'value',updateval);
 % Setappdata
-toc
 setappdata(handles.figure,'handles',handles);
 
 function timerStopFcn_Callback(hObject,event,handles)
@@ -751,7 +765,7 @@ if any([strcmpi(key,'g'),strcmpi(key,'ctrl'),strcmpi(key,'control'),...
     setappdata(handles.figure,'handles',handles);
     return;
 end
-fprintf('KeyPressed: %s\n',key);
+% fprintf('KeyPressed: %s\n',key);
 % Go to component;
 if strcmpi(handles.keyholder,'g')
     if strcmpi(key,'l') % Set focus on function list

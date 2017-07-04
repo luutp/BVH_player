@@ -16,7 +16,7 @@ import java.util.*;
 import java.lang.*;
 % DEFINES
 handles.filekeyword = 'MODULE';
-global gvar;
+global gvar Dxyz;
 gvar=def_gvar;
 %====STEP 1: FRAME====
 handles.iconlist=getmatlabicons;
@@ -55,6 +55,7 @@ w=0.4; h=0.35;
 handles.player = axes;
 handles.signalax = axes;
 handles.signalannoax = axes;
+handles.mapax = axes;
 % Player control button
 uistring={icontext(handles.iconlist.action.play,'Start'),...
     '',...
@@ -96,14 +97,17 @@ uistring={'',...
     'uistring',uistring,...    
     'gridsize',[1 1],'gridmargin',5);
 % Save matdata
-uistring={icontext(handles.iconlist.action.delete,'Del'),'',...
+uistring={icontext(handles.iconlist.arrowup,'Move'),...
+    icontext(handles.iconlist.arrowdown,'Move'),...
+    icontext(handles.iconlist.action.delete,'Del'),...
+    '',...
     icontext(handles.iconlist.action.save,'Save'),...
     };
-[container_save,handles.pushbutton_del,~,handles.pushbutton_save,...    
-    ]=uigridcomp({'pushbutton','label',...
+[container_save,handles.pushbutton_moveup,handles.pushbutton_movedown,handles.pushbutton_del,~,handles.pushbutton_save,...    
+    ]=uigridcomp({'pushbutton','pushbutton','pushbutton','label',...
     'pushbutton'},...
     'uistring',uistring,...    
-    'gridsize',[1 3],'gridmargin',5,'hweight',[2 6 2]);
+    'gridsize',[1 5],'gridmargin',5,'hweight',[1.5 1.5 1.5 3.5 2]);
 % Option to select the landed leg before transition (LW-SA, SA-LW, LW-SD, SD-LW)
 titlename = {'LW-SA1','SA-LW1','LW-SD1','SD-LW1',...
     'LW-SA2','SA-LW2','LW-SD2','SD-LW2'};
@@ -133,6 +137,7 @@ uialign(container_matdata,container_filelist,'align','southwest','scale',[0.85 1
 uialign(container_save,container_matdata,'align','southwest','scale',[1 0.1],'gap',[0 -0.01]);
 uialign(uipanel_radio,container_gcevent,'align','southwest','scale',[1 2.5],'gap',[0 -0.01]);
 set(handles.signalannoax,'position',get(handles.signalax,'position'));
+uialign(handles.mapax,handles.player,'align','west','scale',[0.35 0.8],'gap',[0.13 0]);
 % Initialize
 uisetjcombolist(handles.combobox_currdir,{cd});
 uijlist_setfiles(handles.jlistbox_filenameinput,cd);
@@ -142,7 +147,10 @@ set(handles.slider_frame,'min',0,'max',10000);
 handles.keyholder = '';
 set(handles.checkbox_defaultview,'value',1);
 set(handles.signalax,'color','none');
+set(handles.mapax,'color','none');
 uistack(handles.signalannoax,'top');
+uistack(handles.mapax,'top');
+
 % Setappdata
 setappdata(handles.figure,'handles',handles);
 % set(handles.combobox_gclabel,'background',javax.swing.plaf.ColorUIResource([256 0 0]))
@@ -167,6 +175,8 @@ set(handles.pushbutton_save,'Callback',{@pushbutton_save_Callback,handles});
 set(handles.pushbutton_del,'Callback',{@pushbutton_del_Callback,handles});
 set(handles.pushbutton_insert,'Callback',{@pushbutton_insert_Callback,handles});
 set(handles.pushbutton_update,'Callback',{@pushbutton_update_Callback,handles});
+set(handles.pushbutton_moveup,'Callback',{@pushbutton_moveup_Callback,handles});
+set(handles.pushbutton_movedown,'Callback',{@pushbutton_movedown_Callback,handles});
 % Slider and edit text
 set(handles.edit_frame,'Callback',{@edit_frame_Callback,handles});
 set(handles.slider_frame,'Callback',{@slider_frame_Callback,handles});
@@ -178,7 +188,7 @@ handles=getappdata(handles.figure,'handles');
 val = get(hObject,'value');
 if val == 1
     axes(handles.player);
-    view(-45,-30);
+    view([0 0]);
 end
 % Setappdata
 setappdata(handles.figure,'handles',handles);
@@ -235,10 +245,20 @@ elseif strcmpi(ext,'.mat')
     anno_signalax(handles);
     jlistbox_matdata_Callback(handles.jlistbox_matdata,[],handles);
 elseif strcmpi(ext,'.bvh')
-    [handles.skeleton,handles.time] = loadbvh(fullfile(currdir,filename));
-    set(handles.slider_frame,'min',0,'max',length(handles.time),...
-        'sliderstep',[1 10]./length(handles.time));
-    showframe(1,handles);
+    [skeleton,time] = loadbvh(fullfile(currdir,filename));
+    set(handles.slider_frame,'min',0,'max',length(time),...
+        'sliderstep',[1 10]./length(time));
+    for i = 1: length(skeleton)
+        thisbody = skeleton(i).Dxyz;
+        parent(i) = skeleton(i).parent;
+        for j = 1 : length(time)
+            Dxyz(:,i,j) = thisbody(:,j);
+        end
+    end    
+    assignin('base','Dxyz',Dxyz);
+    assignin('base','parent',parent);
+    assignin('base','skeleton',skeleton);
+    showframe(1,handles);    
     fprintf('bvh file is loaded.\n');
 else
 end
@@ -254,14 +274,14 @@ set(handles.edit_frame,'string',num2str(sl_val));
 % UPdate jlistbox_matdata
 gcinfo = gclist2info(uigetjlistbox(handles.jlistbox_matdata,'select','all'));
 gcid = find(gcinfo.index(:,1) <= sl_val,1,'last');
-if isempty(gcid) 
-    setval = 0;
-elseif gcid >= size(gcinfo.index,1), setval = size(gcinfo.index,1)-1;
-else
-    setval = gcid-1;
-end
-set(handles.jlistbox_matdata,'SelectedIndex',setval);
-if isfield(handles,'skeleton')    
+% if isempty(gcid) 
+%     setval = 0;
+% elseif gcid >= size(gcinfo.index,1), setval = size(gcinfo.index,1)-1;
+% else
+%     setval = gcid-1;
+% end
+% set(handles.jlistbox_matdata,'SelectedIndex',setval);
+if uh_isvarexist('skeleton')
     showframe(sl_val,handles);
 end
 % Scroll signal plot axis
@@ -278,8 +298,9 @@ gcinfo = gclist2info(uigetjlistbox(handles.jlistbox_matdata,'select','all'));
 
 axes(handles.signalax);
 cla; hold on;
-if sl_val < 50,  tsignal = 1 : 50;
-else tsignal = sl_val-50 : sl_val+50; % Get 100 frames around current frame
+frameshow = 50;
+if sl_val < frameshow,  tsignal = 1 : frameshow;
+else tsignal = sl_val-fram : sl_val+frameshow; % Get 100 frames around current frame
 end
 kin = evalin('base','kin');
 AccLeftFoot = kin.Data.sensorAcceleration.LeftFoot(:,3);
@@ -415,16 +436,20 @@ setappdata(handles.figure,'handles',handles);
 
 function updateuigcevent(gcinfo,handles)
 handles=getappdata(handles.figure,'handles');
-if strcmpi(gcinfo.label,'LW1'), idx = 0;
-elseif strcmpi(gcinfo.label,'LW2'), idx = 1;
-elseif strcmpi(gcinfo.label,'LW3'), idx = 2;
-elseif strcmpi(gcinfo.label,'LW4'), idx = 3;
-elseif strcmpi(gcinfo.label,'LW5'), idx = 4;
-elseif strcmpi(gcinfo.label,'LW6'), idx = 5;
-elseif strcmpi(gcinfo.label,'RD'), idx = 6;
-elseif strcmpi(gcinfo.label,'RA'), idx = 7;
-elseif strcmpi(gcinfo.label,'SA'), idx = 8;
-elseif strcmpi(gcinfo.label,'SD'), idx = 9;
+if strcmpi(gcinfo.label,'LW0F'), idx = 0;
+elseif strcmpi(gcinfo.label,'RD'), idx = 1;
+elseif strcmpi(gcinfo.label,'LW1F'), idx = 2;
+elseif strcmpi(gcinfo.label,'LW2F'), idx = 3;
+elseif strcmpi(gcinfo.label,'LW3F'), idx = 4;
+elseif strcmpi(gcinfo.label,'SA'), idx = 5;
+elseif strcmpi(gcinfo.label,'LW4F'), idx = 6;
+elseif strcmpi(gcinfo.label,'LW4B'), idx = 7;
+elseif strcmpi(gcinfo.label,'SD'), idx = 8;
+elseif strcmpi(gcinfo.label,'LW3B'), idx = 9;
+elseif strcmpi(gcinfo.label,'LW2B'), idx = 10;
+elseif strcmpi(gcinfo.label,'LW1B'), idx = 11;
+elseif strcmpi(gcinfo.label,'RA'), idx = 12;
+elseif strcmpi(gcinfo.label,'LW0B'), idx = 13;
 else idx = 0;
 end
 set(handles.edit_gcevent1,'string',num2str(gcinfo.index(1)));
@@ -455,19 +480,22 @@ gclabel = get(handles.combobox_gclabel,'selecteditem');
 gcindex = get(handles.jlistbox_matdata,'SelectedIndex') + 1;
 currlist = uigetjlistbox(handles.jlistbox_matdata,'select','all');
 gcinfo = gclist2info(currlist);
-currgcdata = gcinfo.index;
-currgclabel = gcinfo.label;
 insertval = [str2num(get(handles.edit_gcevent1,'string')),...
     str2num(get(handles.edit_gcevent2,'string')),...
     str2num(get(handles.edit_gcevent3,'string')),...
     str2num(get(handles.edit_gcevent4,'string')),...
     str2num(get(handles.edit_gcevent5,'string'))];
-newgcdata = [currgcdata(1:gcindex,:); insertval; currgcdata(gcindex+1:end,:)];
-newgclabel = transpose({currgclabel{1:gcindex}, gclabel, currgclabel{gcindex+1:end}});
 % Update GUI;
-uisetjlistbox(handles.jlistbox_matdata,gcinfo2list(newgcdata,newgclabel));
+model=get(handles.jlistbox_matdata,'Model');
+newitem = gcinfo2list(insertval,gclabel);
+model.insertElementAt(newitem{1},gcindex);
 set(handles.jlistbox_matdata,'selectedIndex',gcindex);
-updateSignalplot(handles)
+updateSignalplot(handles);
+set(handles.edit_gcevent1,'backgroundcolor','w');
+set(handles.edit_gcevent2,'backgroundcolor','w');
+set(handles.edit_gcevent3,'backgroundcolor','w');
+set(handles.edit_gcevent4,'backgroundcolor','w');
+set(handles.edit_gcevent5,'backgroundcolor','w');
 % Setappdata
 setappdata(handles.figure,'handles',handles);
 
@@ -487,6 +515,11 @@ newgclabel = gcinfo.label; newgclabel{gcindex} = gclabel;
 % Update GUI;
 uisetjlistbox(handles.jlistbox_matdata,gcinfo2list(newgcdata,newgclabel));
 set(handles.jlistbox_matdata,'selectedIndex',gcindex-1);
+set(handles.edit_gcevent1,'backgroundcolor','w');
+set(handles.edit_gcevent2,'backgroundcolor','w');
+set(handles.edit_gcevent3,'backgroundcolor','w');
+set(handles.edit_gcevent4,'backgroundcolor','w');
+set(handles.edit_gcevent5,'backgroundcolor','w');
 updateSignalplot(handles)
 % Setappdata
 setappdata(handles.figure,'handles',handles);
@@ -530,39 +563,95 @@ fprintf('DONE...%s\n',thisFuncName);
 % Setappdata
 setappdata(handles.figure,'handles',handles);
 
+function pushbutton_moveup_Callback(hObject,eventdata,handles)
+handles=getappdata(handles.figure,'handles');
+selrow = get(handles.jlistbox_matdata,'selectedIndex');
+model=get(handles.jlistbox_matdata,'Model');
+insertitem = model.getElementAt(selrow);
+model.insertElementAt(insertitem,selrow-1);
+model.removeElementAt(get(handles.jlistbox_matdata,'selectedIndex'));
+set(handles.jlistbox_matdata,'selectedIndex',selrow-1);
+% Setappdata
+setappdata(handles.figure,'handles',handles);
+
+function pushbutton_movedown_Callback(hObject,eventdata,handles)
+handles=getappdata(handles.figure,'handles');
+selrow = get(handles.jlistbox_matdata,'selectedIndex');
+model=get(handles.jlistbox_matdata,'Model');
+insertitem = model.getElementAt(selrow);
+model.insertElementAt(insertitem,selrow+2);
+model.removeElementAt(get(handles.jlistbox_matdata,'selectedIndex'));
+set(handles.jlistbox_matdata,'selectedIndex',selrow+1);
+% Setappdata
+setappdata(handles.figure,'handles',handles);
+
 function showframe(ff,handles)
 axes(handles.player); 
 cla;hold on;
-skeleton = handles.skeleton;
-body = 1 : length(skeleton);
+Dxyz = evalin('base','Dxyz');
+parent = evalin('base','parent');
+
+body = 1 : size(Dxyz,2);
 body([8,13,18]) = []; % Remove unneccessary parts.
-for i = 1:length(body)
+% 170703: Modify to Xsens updated software.
+% The Dxyz variable in the skeleton change
+% sequence. 
+%  first row and third row have been switched/
+% Z direction now includes height but drifts very
+% much
+xrow = 1; % v2.0
+yrow = 3;
+zrow = 2;
+% plot3(Dxyz(1,body,ff),Dxyz(3,body,ff),Dxyz(2,body,ff),'.','markersize',20,...
+%     'color',[154 154 154]./256);
+plot3(Dxyz(xrow,body,ff),Dxyz(yrow,body,ff),Dxyz(zrow,body,ff),'.','markersize',20,...
+    'color',[154 154 154]./256);
+for i = 1 : length(body)
     nn = body(i);
-    if any(nn==[19 20 21 22 23]), selcolor = 'r'; 
-    elseif any(nn==[24 25 26 27 28]), selcolor = 'k'; 
+    if any(nn==[19 20 21 22 23]), selcolor = 'r';
+    elseif any(nn==[24 25 26 27 28]), selcolor = 'k';
     else selcolor = [154 154 154]./256;
     end
-    plot3(-skeleton(nn).Dxyz(1,ff),-skeleton(nn).Dxyz(3,ff),skeleton(nn).Dxyz(2,ff),'.','markersize',20,...
-        'color',selcolor)
-%     text(-skeleton(nn).Dxyz(1,ff),-skeleton(nn).Dxyz(3,ff),skeleton(nn).Dxyz(2,ff),sprintf('%d',nn));
-    parent = skeleton(nn).parent;
-    if parent > 0
-        plot3([-skeleton(parent).Dxyz(1,ff) -skeleton(nn).Dxyz(1,ff)],...
-            [-skeleton(parent).Dxyz(3,ff) -skeleton(nn).Dxyz(3,ff)],...
-            [skeleton(parent).Dxyz(2,ff) skeleton(nn).Dxyz(2,ff)],...
+    thisparent = parent(nn);
+    if thisparent > 0
+        plot3([Dxyz(xrow,thisparent,ff) Dxyz(xrow,nn,ff)],...
+            [Dxyz(yrow,thisparent,ff) Dxyz(yrow,nn,ff)],...
+            [Dxyz(zrow,thisparent,ff) Dxyz(zrow,nn,ff)],...
             'color',selcolor);
-    end        
+    end
 end
-% rectcenter = [-skeleton(21).Dxyz(1,ff),-skeleton(21).Dxyz(3,ff)];
-% class_rectangle('center',class_point('xdata',rectcenter(1),'ydata',rectcenter(2)),...
-%     'width',100,'height',100,'facealpha',0.1,'facecolor',[154 154 154]./256,'draw',1);
+rtoe = [Dxyz(xrow,23,ff),Dxyz(yrow,23,ff), Dxyz(zrow,23,ff)];
 if get(handles.checkbox_defaultview,'value')==1
-    view(30, 10)
+    view([0 0])
 else
 end
-axis equal off
-% ylabel('y axis');
-% drawnow
+if ff < 201, sff = 1 : ff;
+elseif 201 <= ff && ff < size(Dxyz,3)-199 
+    sff = ff-200 : ff+200;
+else sff = ff-200 : size(Dxyz,3);
+end
+plot3(squeeze(Dxyz(xrow,23,sff)),squeeze(Dxyz(yrow,23,sff)),squeeze(Dxyz(zrow,23,sff)),'r:');
+plot3(squeeze(Dxyz(xrow,28,sff)),squeeze(Dxyz(yrow,28,sff)),squeeze(Dxyz(zrow,28,sff)),'k:');
+plot3(squeeze(Dxyz(xrow,23,:)),squeeze(Dxyz(yrow,23,:)),zeros(zrow,size(Dxyz,3)),'color','k')
+axis equal off;
+set(gca,'xlim',[rtoe(1)-200 rtoe(1)+200],'ylim',[rtoe(2)-200 rtoe(2)+200],'zlim',[rtoe(3)-10 rtoe(3)+180]);
+
+axes(handles.mapax);
+cla; hold on;
+for i = 1 : length(body)
+    nn = body(i);    
+    thisparent = parent(nn);
+    if thisparent > 0
+        plot3([Dxyz(xrow,thisparent,ff) Dxyz(xrow,nn,ff)],...
+            [Dxyz(yrow,thisparent,ff) Dxyz(yrow,nn,ff)],...
+            [Dxyz(zrow,thisparent,ff) Dxyz(zrow,nn,ff)],...
+            'color',[0 109 219]./256);
+    end
+end
+plot(squeeze(Dxyz(xrow,7,:)),squeeze(Dxyz(yrow,7,:)),'color',[154 154 154]./256);hold on;
+class_text('position',[Dxyz(xrow,7,1),Dxyz(yrow,7,1)],'string','START','fontsize',8,'show',1);
+view(45,30);
+axis equal off;
 
 function liststr = gcinfo2list(matdata,label)
 for i = 1 : size(matdata,1)
@@ -632,11 +721,14 @@ setappdata(handles.figure,'handles',handles);
 function timerFcn_Callback(hObject,event,handles)
 handles=getappdata(handles.figure,'handles');
 ff = str2num(get(handles.edit_frame,'string'));
-set(handles.slider_frame,'value',ff);
-set(handles.edit_frame,'string',num2str(ff));
-% showframe(ff,handles);
 slider_frame_Callback(handles.slider_frame,[],handles);
-set(handles.edit_frame,'string',num2str(ff+1));
+updateval = ff+3;
+if updateval > get(handles.slider_frame,'max')
+    updateval = get(handles.slider_frame,'max'); 
+    pushbutton_play_Callback(handles.pushbutton_play,[],handles);
+end
+set(handles.edit_frame,'string',num2str(updateval));
+set(handles.slider_frame,'value',updateval);
 % Setappdata
 setappdata(handles.figure,'handles',handles);
 
@@ -672,6 +764,7 @@ if any([strcmpi(key,'g'),strcmpi(key,'ctrl'),strcmpi(key,'control'),...
     setappdata(handles.figure,'handles',handles);
     return;
 end
+% fprintf('KeyPressed: %s\n',key);
 % Go to component;
 if strcmpi(handles.keyholder,'g')
     if strcmpi(key,'l') % Set focus on function list
@@ -691,32 +784,42 @@ elseif strcmpi(handles.keyholder,'shift')
 elseif strcmpi(handles.keyholder,'ctrl') || strcmpi(handles.keyholder,'control') && strcmpi(key,'s')
     pushbutton_save_Callback(handles.pushbutton_save,[],handles);
 else
-    if strcmpi(key,'return') || strcmpi(key,'enter') && hObject == handles.jlistbox_matdata
+    if (strcmpi(key,'return') || strcmpi(key,'enter')) && hObject ~= handles.jlistbox_filenameinput
         pushbutton_insert_Callback(handles.pushbutton_insert,[],handles);        
-    elseif strcmpi(key,'return') || strcmpi(key,'enter') && hObject == handles.jlistbox_filenameinput
+    elseif (strcmpi(key,'return') || strcmpi(key,'enter')) && hObject == handles.jlistbox_filenameinput
         handles = jlistbox_filenameinput_load(hObject,handles);
-    elseif strcmpi(key,'up') || strcmpi(key,'down') && hObject == handles.jlistbox_matdata
+    elseif strcmpi(key,'uparrow') || strcmpi(key,'downarrow')
+        handles.jlistbox_matdata.requestFocus
+    elseif strcmpi(key,'up') || strcmpi(key,'down')
         jlistbox_matdata_Callback(handles.jlistbox_matdata,[],handles);
-    elseif strcmpi(key,'left') && hObject == handles.jlistbox_matdata
+    elseif strcmpi(key,'left')
         set(handles.slider_frame,'value',get(handles.slider_frame,'value')-1);
         slider_frame_Callback(handles.slider_frame,[],handles);
-    elseif strcmpi(key,'right') && hObject == handles.jlistbox_matdata
+    elseif strcmpi(key,'right')
         set(handles.slider_frame,'value',get(handles.slider_frame,'value')+1);
         slider_frame_Callback(handles.slider_frame,[],handles);
-    elseif strcmpi(key,'space') && hObject == handles.jlistbox_matdata
-        set(handles.slider_frame,'value',get(handles.slider_frame,'value')+4);
+    elseif strcmpi(key,'space')
+        currval = get(handles.slider_frame,'value');
+        newval = currval + 4;
+        if newval > get(handles.slider_frame,'max'), newval = newval-4; end;
+        set(handles.slider_frame,'value',newval);
         slider_frame_Callback(handles.slider_frame,[],handles);
-    elseif strcmpi(key,'a') && hObject == handles.jlistbox_matdata           
+    elseif strcmpi(key,'a')            
         set(handles.edit_gcevent1,'string',get(handles.edit_frame,'string'));   % Add current frame to gait event 1
-    elseif strcmpi(key,'s') && hObject == handles.jlistbox_matdata
+        set(handles.edit_gcevent1,'backgroundcolor',[154 154 154]./256);
+    elseif strcmpi(key,'s') 
         set(handles.edit_gcevent2,'string',get(handles.edit_frame,'string'));   % Add current frame to gait event 2
-    elseif strcmpi(key,'d') && hObject == handles.jlistbox_matdata
+        set(handles.edit_gcevent2,'backgroundcolor',[154 154 154]./256);
+    elseif strcmpi(key,'d') 
         set(handles.edit_gcevent3,'string',get(handles.edit_frame,'string'));   % Add current frame to gait event 3
-    elseif strcmpi(key,'f') && hObject == handles.jlistbox_matdata
+        set(handles.edit_gcevent3,'backgroundcolor',[154 154 154]./256);
+    elseif strcmpi(key,'f') 
         set(handles.edit_gcevent4,'string',get(handles.edit_frame,'string'));   % Add current frame to gait event 4
-    elseif strcmpi(key,'r') && hObject == handles.jlistbox_matdata
+        set(handles.edit_gcevent4,'backgroundcolor',[154 154 154]./256);
+    elseif strcmpi(key,'r') 
         set(handles.edit_gcevent5,'string',get(handles.edit_frame,'string'));   % Add current frame to gait event 5
-    elseif strcmpi(key,'e') && hObject == handles.jlistbox_matdata
+        set(handles.edit_gcevent5,'backgroundcolor',[154 154 154]./256);
+    elseif strcmpi(key,'e') 
         idx = get(handles.combobox_gclabel,'selectedindex');
         if idx == get(handles.combobox_gclabel,'ItemCount')-1, idx = 0;
         else idx = idx + 1; end
