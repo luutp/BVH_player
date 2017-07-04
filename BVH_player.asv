@@ -286,8 +286,9 @@ if uh_isvarexist('skeleton')
 end
 % Scroll signal plot axis
 axes(handles.signalax);
-if sl_val < 50,  tsignal = 1 : 50;
-else tsignal = sl_val-50 : sl_val+50; % Get 100 frames around current frame
+frameshow = 100;
+if sl_val < frameshow,  tsignal = 1 : frameshow;
+else tsignal = sl_val-frameshow : sl_val+frameshow; % Get 100 frames around current frame
 end
 set(gca,'xlim',[tsignal(1) tsignal(end)],'ylim',[-100 50]);
 setappdata(handles.figure,'handles',handles);
@@ -298,9 +299,9 @@ gcinfo = gclist2info(uigetjlistbox(handles.jlistbox_matdata,'select','all'));
 
 axes(handles.signalax);
 cla; hold on;
-frameshow = 50;
+frameshow = 100;
 if sl_val < frameshow,  tsignal = 1 : frameshow;
-else tsignal = sl_val-fram : sl_val+frameshow; % Get 100 frames around current frame
+else tsignal = sl_val-frameshow : sl_val+frameshow; % Get 100 frames around current frame
 end
 kin = evalin('base','kin');
 AccLeftFoot = kin.Data.sensorAcceleration.LeftFoot(:,3);
@@ -310,14 +311,14 @@ OriRightFoot = kin.Data.sensorOrientationEuler.RightFoot(:,2);
 PosLeftFoot = kin.Data.position.LeftFoot(:,3);
 PosRightFoot = kin.Data.position.RightFoot(:,3);
 
-plot(2*(AccRightFoot-mean(AccRightFoot))+30,'r');
-plot(0.5*(OriRightFoot-mean(OriRightFoot))+30,'r.');
-plot(2*(AccLeftFoot-mean(AccLeftFoot))+25,'k');
-plot(0.5*(OriLeftFoot-mean(OriLeftFoot))+25,'k.');
+plot(2*(AccRightFoot-mean(AccRightFoot))+15,'r');
+plot(0.5*(OriRightFoot-mean(OriRightFoot))+15,'r.');
+plot(2*(AccLeftFoot-mean(AccLeftFoot))+5,'k');
+plot(0.5*(OriLeftFoot-mean(OriLeftFoot))+5,'k.');
 
-plot(300*(PosRightFoot-mean(PosRightFoot))-50,'r-.');
+plot(100*(PosRightFoot-mean(PosRightFoot))-50,'r-.');
 plot(0.5*(OriRightFoot-mean(OriRightFoot))-50,'r.');
-plot(300*(PosLeftFoot-mean(PosLeftFoot))-60,'k-.');
+plot(100*(PosLeftFoot-mean(PosLeftFoot))-60,'k-.');
 plot(0.5*(OriLeftFoot-mean(OriLeftFoot))-60,'k.');
 
 selcolor = [255 0 0; 154 154 154; 0 0 0; 255 109 182]./256;
@@ -492,6 +493,7 @@ model.insertElementAt(newitem{1},gcindex);
 set(handles.jlistbox_matdata,'selectedIndex',gcindex);
 updateSignalplot(handles);
 set(handles.edit_gcevent1,'backgroundcolor','w');
+
 set(handles.edit_gcevent2,'backgroundcolor','w');
 set(handles.edit_gcevent3,'backgroundcolor','w');
 set(handles.edit_gcevent4,'backgroundcolor','w');
@@ -634,7 +636,7 @@ plot3(squeeze(Dxyz(xrow,23,sff)),squeeze(Dxyz(yrow,23,sff)),squeeze(Dxyz(zrow,23
 plot3(squeeze(Dxyz(xrow,28,sff)),squeeze(Dxyz(yrow,28,sff)),squeeze(Dxyz(zrow,28,sff)),'k:');
 plot3(squeeze(Dxyz(xrow,23,:)),squeeze(Dxyz(yrow,23,:)),zeros(zrow,size(Dxyz,3)),'color','k')
 axis equal off;
-set(gca,'xlim',[rtoe(1)-200 rtoe(1)+200],'ylim',[rtoe(2)-200 rtoe(2)+200],'zlim',[rtoe(3)-10 rtoe(3)+180]);
+set(gca,'xlim',[rtoe(1)-200 rtoe(1)+200],'ylim',[rtoe(2)-200 rtoe(2)+200],'zlim',[rtoe(3)-20 rtoe(3)+180]);
 
 axes(handles.mapax);
 cla; hold on;
@@ -764,7 +766,7 @@ if any([strcmpi(key,'g'),strcmpi(key,'ctrl'),strcmpi(key,'control'),...
     setappdata(handles.figure,'handles',handles);
     return;
 end
-% fprintf('KeyPressed: %s\n',key);
+fprintf('KeyPressed: %s\n',key);
 % Go to component;
 if strcmpi(handles.keyholder,'g')
     if strcmpi(key,'l') % Set focus on function list
@@ -779,7 +781,7 @@ if strcmpi(handles.keyholder,'g')
     end
 elseif strcmpi(handles.keyholder,'shift')
     if strcmpi(key,'return') || strcmpi(key,'enter')
-        pushbutton_update_Callback(handles.pushbutton_update,[],handles);        
+        pushbutton_update_Callback(handles.pushbutton_update,[],handles);            
     end
 elseif strcmpi(handles.keyholder,'ctrl') || strcmpi(handles.keyholder,'control') && strcmpi(key,'s')
     pushbutton_save_Callback(handles.pushbutton_save,[],handles);
@@ -792,10 +794,10 @@ else
         handles.jlistbox_matdata.requestFocus
     elseif strcmpi(key,'up') || strcmpi(key,'down')
         jlistbox_matdata_Callback(handles.jlistbox_matdata,[],handles);
-    elseif strcmpi(key,'left')
+    elseif strcmpi(key,'left') || strcmpi(key, 'k')
         set(handles.slider_frame,'value',get(handles.slider_frame,'value')-1);
         slider_frame_Callback(handles.slider_frame,[],handles);
-    elseif strcmpi(key,'right')
+    elseif strcmpi(key,'right') || strcmpi(key, 'j')
         set(handles.slider_frame,'value',get(handles.slider_frame,'value')+1);
         slider_frame_Callback(handles.slider_frame,[],handles);
     elseif strcmpi(key,'space')
@@ -804,7 +806,33 @@ else
         if newval > get(handles.slider_frame,'max'), newval = newval-4; end;
         set(handles.slider_frame,'value',newval);
         slider_frame_Callback(handles.slider_frame,[],handles);
-    elseif strcmpi(key,'a')            
+    elseif strcmpi(key,'c')                                
+        acc_color = [154 154 154]./256;
+        for c = 1 : 5
+            strcmd = sprintf('editcolor = get(handles.edit_gcevent%d,''backgroundcolor'')',c);    
+            eval(strcmd)
+            if editcolor ~= acc_color
+                strcmd = sprintf('editcolor = set(handles.edit_gcevent%d,''backgroundcolor'',acc_color);',c);    
+                eval(strcmd);
+                strcmd = sprintf('set(handles.edit_gcevent%d,''string'',get(handles.edit_frame,''string''))',c);   % Add current frame to gait event 1        
+                eval(strcmd)
+                return
+            end
+        end                
+    elseif strcmpi(key,'backspace')                                
+        acc_color = [154 154 154]./256;
+        for c = 5 : -1 : 1            
+            strcmd = sprintf('editcolor = get(handles.edit_gcevent%d,''backgroundcolor'')',c)  ;          
+            eval(strcmd)
+            if editcolor == acc_color
+                strcmd = sprintf('editcolor = set(handles.edit_gcevent%d,''backgroundcolor'',''w'');',c);    
+                eval(strcmd);
+                strcmd = sprintf('set(handles.edit_gcevent%d,''string'','''')',c);  % Add current frame to gait event 1        
+                eval(strcmd)
+                return
+            end
+        end                
+    elseif strcmpi(key,'a')                            
         set(handles.edit_gcevent1,'string',get(handles.edit_frame,'string'));   % Add current frame to gait event 1
         set(handles.edit_gcevent1,'backgroundcolor',[154 154 154]./256);
     elseif strcmpi(key,'s') 
