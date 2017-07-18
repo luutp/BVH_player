@@ -498,7 +498,7 @@ set(handles.edit_gcevent1,'string',get(handles.edit_gcevent5,'string'));
 for i = 2 : 5
     strcmd = sprintf('set(handles.edit_gcevent%d,''backgroundcolor'',''w'')',i);
     eval(strcmd);
-    strcmd = sprintf('set(handles.edit_gcevent%d,''string'','''')',i);
+    strcmd = sprintf('set(handles.edit_gcevent%d,''string'',''0'')',i);
     eval(strcmd);
 end
 set(handles.edit_gcevent2,'backgroundcolor','w');
@@ -535,14 +535,23 @@ setappdata(handles.figure,'handles',handles);
 
 function pushbutton_del_Callback(hObject,eventdata,handles)
 handles=getappdata(handles.figure,'handles');
-gcindex = get(handles.jlistbox_matdata,'SelectedIndex') + 1;
-currgclist = uigetjlistbox(handles.jlistbox_matdata,'select','all');
-gcinfo = gclist2info(currgclist);
-gcinfo.index(gcindex,:) = [];
-gcinfo.label(gcindex) = [];
-uisetjlistbox(handles.jlistbox_matdata,gcinfo2list(gcinfo.index,gcinfo.label));
-set(handles.jlistbox_matdata,'selectedIndex',gcindex-1);
-updateSignalplot(handles)
+% currgclist = uigetjlistbox(handles.jlistbox_matdata,'select','all');
+% gcinfo = gclist2info(currgclist);
+% try
+%     gcinfo.index(gcindex,:) = [];
+%     gcinfo.label(gcindex) = [];
+% catch
+% end
+% uisetjlistbox(handles.jlistbox_matdata,gcinfo2list(gcinfo.index,gcinfo.label));
+gcindex = get(handles.jlistbox_matdata,'SelectedIndex');
+% Update GUI;
+model=get(handles.jlistbox_matdata,'Model');
+% methodsview(model)
+% newitem = gcinfo2list(insertval,gclabel);
+model.removeElementAt(gcindex);
+% 
+% set(handles.jlistbox_matdata,'selectedIndex',gcindex-1);
+% updateSignalplot(handles)
 
 % Setappdata
 setappdata(handles.figure,'handles',handles);
@@ -561,7 +570,7 @@ kin.gc.transleg = transleg;
 gcinfo = gclist2info(uigetjlistbox(handles.jlistbox_matdata,'select','all'));
 kin.gc.index = gcinfo.index;
 kin.gc.label = gcinfo.label;
-kin.gc.time = (gcinfo.index-1)./30;
+kin.gc.time = (gcinfo.index-1)./60;
 % kin.gc.index = kin.gc.event.index; % To modify kin format.
 % kin.gc.time = kin.gc.event.time;
 % kin.gc = rmfield(kin.gc,'event');
@@ -633,6 +642,7 @@ rtoe = [Dxyz(xrow,23,ff),Dxyz(yrow,23,ff), Dxyz(zrow,23,ff)];
 if get(handles.checkbox_defaultview,'value')==1
     view([0 0])
 else
+    view(-60,0);
 end
 if ff < 201, sff = 1 : ff;
 elseif 201 <= ff && ff < size(Dxyz,3)-199 
@@ -685,12 +695,17 @@ end
 liststr = strcat(matlist,label);
 
 function gcinfo = gclist2info(celldata)
+gcstr = [];
 for i = 1 : length(celldata)
     thisline = celldata{i};
     dashpos = strfind(thisline,'-');
     temp = thisline(dashpos(end)+1:end);
     gclabel{i,:} = temp(~isspace(temp));
-    gcstr(i,:) = thisline(dashpos(1)+1 : dashpos(2)-1);
+    try
+        gcstr = [gcstr; thisline(dashpos(1)+1 : dashpos(2)-1)];
+    catch        
+        fprintf('WARNING: String size is mismatch')
+    end
 end
 gcidx = str2num(gcstr);
 gcinfo.label = gclabel;
@@ -773,7 +788,7 @@ if any([strcmpi(key,'g'),strcmpi(key,'ctrl'),strcmpi(key,'control'),...
     setappdata(handles.figure,'handles',handles);
     return;
 end
-fprintf('KeyPressed: %s\n',key);
+% fprintf('KeyPressed: %s\n',key);
 % Go to component;
 if strcmpi(handles.keyholder,'g')
     if strcmpi(key,'l') % Set focus on function list
@@ -785,11 +800,19 @@ if strcmpi(handles.keyholder,'g')
     elseif strcmpi(key,'c') % Set focus on popupmenu_currdir
         handles.combobox_currdir.requestFocus;
         fprintf('combobox_currdir is selected.\n');    
-    end
+    elseif strcmpi(key,'space')
+        currval = get(handles.slider_frame,'value');
+        newval = currval - 17;
+        if newval < 0, newval = newval+17; end;
+        set(handles.slider_frame,'value',newval);
+        slider_frame_Callback(handles.slider_frame,[],handles);
+        handles.keyholder = ''; % reset keyholder;
+    end    
 elseif strcmpi(handles.keyholder,'shift')
     if strcmpi(key,'return') || strcmpi(key,'enter')
         pushbutton_update_Callback(handles.pushbutton_update,[],handles);            
     end
+        
 elseif strcmpi(handles.keyholder,'ctrl') || strcmpi(handles.keyholder,'control') && strcmpi(key,'s')
     pushbutton_save_Callback(handles.pushbutton_save,[],handles);
 else
@@ -809,8 +832,8 @@ else
         slider_frame_Callback(handles.slider_frame,[],handles);
     elseif strcmpi(key,'space')
         currval = get(handles.slider_frame,'value');
-        newval = currval + 4;
-        if newval > get(handles.slider_frame,'max'), newval = newval-4; end;
+        newval = currval + 17;
+        if newval > get(handles.slider_frame,'max'), newval = newval-17; end;
         set(handles.slider_frame,'value',newval);
         slider_frame_Callback(handles.slider_frame,[],handles);
     elseif strcmpi(key,'c')                                
@@ -834,7 +857,7 @@ else
             if editcolor == acc_color
                 strcmd = sprintf('editcolor = set(handles.edit_gcevent%d,''backgroundcolor'',''w'');',c);    
                 eval(strcmd);
-                strcmd = sprintf('set(handles.edit_gcevent%d,''string'','''')',c);  % Add current frame to gait event 1        
+                strcmd = sprintf('set(handles.edit_gcevent%d,''string'',''0'')',c);  % Add current frame to gait event 1        
                 eval(strcmd)
                 return
             end
@@ -863,6 +886,23 @@ else
         pushbutton_del_Callback(handles.pushbutton_del,[],handles);
     elseif strcmpi(key,'f1')
         winopen('.\hotkey.txt');
+    elseif strcmpi(key,'f2')        
+    elseif strcmpi(key,'numpad-0') || strcmpi(key,'numpad0')
+        gclabelIndex = get(handles.combobox_gclabel,'selectedindex');
+        itemCounts = handles.combobox_gclabel.getItemCount;
+        if gclabelIndex < itemCounts-1
+            set(handles.combobox_gclabel,'selectedindex',gclabelIndex+1);
+        else
+            set(handles.combobox_gclabel,'selectedindex',0);
+        end
+    elseif strcmpi(key,'numpad-1') || strcmpi(key,'numpad1')
+        gclabelIndex = get(handles.combobox_gclabel,'selectedindex');
+        itemCounts = handles.combobox_gclabel.getItemCount;
+        if gclabelIndex > 0
+            set(handles.combobox_gclabel,'selectedindex',gclabelIndex-1);
+        else
+            set(handles.combobox_gclabel,'selectedindex',itemCounts-1);
+        end
     end
 end
 handles.keyholder = ''; % reset keyholder;
